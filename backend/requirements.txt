@@ -9,4 +9,4 @@ transformers==4.40.2
 accelerate==0.29.3
 bitsandbytes==0.43.1
 sentencepiece==0.2.0
-protobuf==4.25.3
+protobuf==5.29.6
