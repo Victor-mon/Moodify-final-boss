@@ -62,7 +62,8 @@ app.add_middleware(
 # Sirve el frontend estático desde /frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.isdir(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+    app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name="css")
+    app.mount("/js",  StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),  name="js")
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -111,7 +112,6 @@ def serve_login():
 def serve_app():
     path = os.path.join(FRONTEND_DIR, "app.html")
     return FileResponse(path)
-
 
 # ── Rutas: auth ───────────────────────────────────────────────
 
