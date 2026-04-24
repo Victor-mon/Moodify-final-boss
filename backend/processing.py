@@ -326,8 +326,36 @@ class PromptBuilder:
         }.get(tipo, "Conserva el tipo y propósito.")
         min_w = max(4, int(palabras * 0.80))
         max_w = max(15, int(palabras * (1.4 if lon_clase in ("muy_corto", "corto") else 2.2)))
-        return f"""Eres un experto en comunicación profesional en México.\n\nTAREA: Cambiar ÚNICAMENTE el tono. El contenido NO cambia.\n\nANÁLISIS:\nQuién habla: {emisor} | A quién: {receptor} ({reg_rec}) | Tipo: {tipo}\nTono emocional: {tono_em} (intensidad {intensidad}) | Palabras: {palabras}\n\nNÚCLEOS SEMÁNTICOS — preservar:\n{ancla}\n──────────────────────────────────────────────\n{estrategia}\n{perspectiva}\n\n{tono_def}\n\n{('──────────────────────────────\n'+slang_instr) if slang_instr else ''}\nTipo de mensaje: {tipo_nota}\n\nPROHIBICIONES ABSOLUTAS:\n· NO escribas prefijos ni etiquetas\n· NO generes dos versiones\n· NO cambies quién hace qué\n· NO añadas información nueva\n· NO uses palabras en inglés\n· Si el mensaje es corto, tu respuesta también lo es\n\nLongitud objetivo: {min_w} a {max_w} palabras.\n\nMENSAJE ORIGINAL:\n"{mensaje}"\n\nEscribe ÚNICAMENTE el mensaje reescrito. Sin comillas. Sin prefijos. Sin explicaciones."""
+        nl = "\n"
+        slang_bloque = (f"{'─'*30}{nl}{slang_instr}") if slang_instr else ""
+    
+        return (
+            f"Eres un experto en comunicación profesional en México.{nl}{nl}"
+            f"TAREA: Cambiar ÚNICAMENTE el tono. El contenido NO cambia.{nl}{nl}"
+            f"ANÁLISIS:{nl}"
+            f"Quién habla: {emisor} | A quién: {receptor} ({reg_rec}) | Tipo: {tipo}{nl}"
+            f"Tono emocional: {tono_em} (intensidad {intensidad}) | Palabras: {palabras}{nl}{nl}"
+            f"NÚCLEOS SEMÁNTICOS — preservar:{nl}{ancla}{nl}"
+            f"{'─'*46}{nl}"
+            f"{estrategia}{nl}"
+            f"{perspectiva}{nl}{nl}"
+            f"{tono_def}{nl}{nl}"
+            f"{slang_bloque}{nl}"
+            f"Tipo de mensaje: {tipo_nota}{nl}{nl}"
+            f"PROHIBICIONES ABSOLUTAS:{nl}"
+            f"· NO escribas prefijos ni etiquetas{nl}"
+            f"· NO generes dos versiones{nl}"
+            f"· NO cambies quién hace qué{nl}"
+            f"· NO añadas información nueva{nl}"
+            f"· NO uses palabras en inglés{nl}"
+            f"· Si el mensaje es corto, tu respuesta también lo es{nl}{nl}"
+            f"Longitud objetivo: {min_w} a {max_w} palabras.{nl}{nl}"
+            f"MENSAJE ORIGINAL:{nl}"
+            f'"{mensaje}"{nl}{nl}'
+            f"Escribe ÚNICAMENTE el mensaje reescrito. Sin comillas. Sin prefijos. Sin explicaciones."
+        )
 
+        
     def _perspectiva(self, emisor, receptor, reg_rec):
         lineas = ["PERSPECTIVA GRAMATICAL:"]
         if emisor == "yo":
