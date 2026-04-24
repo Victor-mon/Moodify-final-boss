@@ -9,7 +9,20 @@
 </head>
 <body>
 
-<!-- Overlay de carga -->
+<!-- ════════════════════════════════════
+     FONDO GALAXY / UNIVERSO
+════════════════════════════════════ -->
+<canvas id="stars-canvas"></canvas>
+<div id="galaxy-bg">
+  <div class="galaxy-blob" id="gb1"></div>
+  <div class="galaxy-blob" id="gb2"></div>
+  <div class="galaxy-blob" id="gb3"></div>
+  <div class="galaxy-blob" id="gb4"></div>
+</div>
+
+<!-- ════════════════════════════════════
+     OVERLAY DE CARGA
+════════════════════════════════════ -->
 <div id="moodify-overlay">
   <div class="overlay-eyes">
     <div class="ov-eye-unit">
@@ -33,7 +46,9 @@
   </div>
 </div>
 
-<!-- Nav -->
+<!-- ════════════════════════════════════
+     NAV
+════════════════════════════════════ -->
 <nav class="top-nav" id="top-nav">
   <div class="nav-tabs" id="nav-tabs">
     <button class="nav-tab active" data-tab="transformar" onclick="switchPanel('transformar')">✦ Transformar</button>
@@ -44,9 +59,83 @@
   <div class="nav-right">
     <div class="nav-dot"></div>
     <span class="nav-username" id="nav-username">@usuario</span>
-    <button class="btn-nav-logout" onclick="doLogout()">Cerrar sesión</button>
+    <button class="btn-nav-config" onclick="openConfig()">⚙ Configuración</button>
   </div>
 </nav>
+
+<!-- ════════════════════════════════════
+     MODAL CONFIGURACIÓN
+════════════════════════════════════ -->
+<div class="config-overlay" id="cfg-overlay" onclick="closeConfigOutside(event)">
+  <div class="config-modal">
+    <div class="cfg-header">
+      <span class="cfg-title">Configuración</span>
+      <button class="cfg-close" onclick="closeConfig()">✕</button>
+    </div>
+
+    <!-- Apariencia -->
+    <div class="cfg-section">
+      <div class="cfg-section-title">Apariencia</div>
+
+      <div class="cfg-row">
+        <div>
+          <div class="cfg-row-label">Tema</div>
+          <div class="cfg-row-sub" id="cfg-theme-sub">Modo oscuro activo</div>
+        </div>
+        <div class="cfg-toggle" id="cfg-theme-toggle" onclick="toggleTheme()"></div>
+      </div>
+
+      <div class="cfg-row">
+        <div>
+          <div class="cfg-row-label">Idioma del agente</div>
+          <div class="cfg-row-sub">Español está optimizado para México</div>
+        </div>
+        <select class="cfg-select" id="cfg-lang-select" onchange="setAgentLang(this.value)">
+          <option value="es">🇲🇽 Español</option>
+          <option value="en">🇺🇸 English</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Cuenta -->
+    <div class="cfg-section">
+      <div class="cfg-section-title">Cuenta</div>
+
+      <div class="cfg-row">
+        <div>
+          <div class="cfg-row-label">Nombre de usuario</div>
+          <div class="cfg-row-sub" id="cfg-username-display">@usuario</div>
+        </div>
+        <button class="cfg-btn-inline" onclick="startChangeUsername()">Cambiar</button>
+      </div>
+
+      <div class="cfg-row">
+        <div>
+          <div class="cfg-row-label">Correo electrónico</div>
+          <div class="cfg-row-sub" id="cfg-email-display">—</div>
+        </div>
+        <button class="cfg-btn-inline" onclick="startChangeEmail()">Cambiar</button>
+      </div>
+
+      <div class="cfg-row">
+        <div>
+          <div class="cfg-row-label">Contraseña</div>
+          <div class="cfg-row-sub">••••••••</div>
+        </div>
+        <button class="cfg-btn-inline" onclick="startChangePassword()">Cambiar</button>
+      </div>
+    </div>
+
+    <div class="cfg-divider"></div>
+
+    <!-- Sesión -->
+    <div class="cfg-section" style="margin-bottom:0;">
+      <div class="cfg-section-title">Sesión</div>
+      <button class="cfg-btn-full cfg-btn-logout" onclick="doLogout()">↩ Cerrar sesión</button>
+      <button class="cfg-btn-full cfg-btn-danger" style="margin-top:8px;" onclick="confirmDeleteAccount()">✕ Eliminar cuenta</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════
      PANEL: TRANSFORMAR
@@ -75,12 +164,10 @@
       ></textarea>
       <button class="btn-transform" onclick="doTransform()">Transformar ✦</button>
 
-      <!-- Detector de idioma -->
       <div class="detector-box" id="detector-box">
         <div class="det-neutral">🌐 Idioma — Escribe para detectar</div>
       </div>
 
-      <!-- Asesor emocional -->
       <div class="clippy-wrap" id="clippy-wrap" style="display:none;">
         <div class="clippy-header">
           <span class="clip-dot"></span> MOODIFY DICE
@@ -91,7 +178,6 @@
 
     <!-- Columna derecha -->
     <div>
-      <!-- Barra de idioma de salida -->
       <div class="lang-bar">
         <span class="lang-label">🌐 Salida en</span>
         <button class="lang-btn on" id="btn-es" onclick="selectLang('es')">✓ ES 🇲🇽</button>
@@ -103,34 +189,37 @@
 
       <!-- Diplomático -->
       <div class="output-section">
-        <div class="output-header oh-dipl">
-          <span class="tone-badge badge-dipl">🤝 Diplomático</span>
-        </div>
-        <div class="output-body ob-dipl" id="out-dipl">
-          <span class="output-placeholder">La versión diplomática aparecerá aquí...</span>
-          <button class="copy-btn" onclick="copyText('out-dipl')" style="display:none;">Copiar</button>
+        <div class="output-card card-dipl">
+          <div class="output-header">
+            <span class="tone-badge badge-dipl">🤝 Diplomático</span>
+          </div>
+          <div class="output-body" id="out-dipl">
+            <span class="output-placeholder">La versión diplomática aparecerá aquí...</span>
+          </div>
         </div>
       </div>
 
       <!-- Ejecutivo -->
       <div class="output-section">
-        <div class="output-header oh-ejec">
-          <span class="tone-badge badge-ejec">💼 Ejecutivo</span>
-        </div>
-        <div class="output-body ob-ejec" id="out-ejec">
-          <span class="output-placeholder">La versión ejecutiva aparecerá aquí...</span>
-          <button class="copy-btn" onclick="copyText('out-ejec')" style="display:none;">Copiar</button>
+        <div class="output-card card-ejec">
+          <div class="output-header">
+            <span class="tone-badge badge-ejec">💼 Ejecutivo</span>
+          </div>
+          <div class="output-body" id="out-ejec">
+            <span class="output-placeholder">La versión ejecutiva aparecerá aquí...</span>
+          </div>
         </div>
       </div>
 
       <!-- Casual -->
       <div class="output-section">
-        <div class="output-header oh-casu">
-          <span class="tone-badge badge-casu">😊 Casual</span>
-        </div>
-        <div class="output-body ob-casu" id="out-casu">
-          <span class="output-placeholder">La versión casual aparecerá aquí...</span>
-          <button class="copy-btn" onclick="copyText('out-casu')" style="display:none;">Copiar</button>
+        <div class="output-card card-casu">
+          <div class="output-header">
+            <span class="tone-badge badge-casu">😊 Casual</span>
+          </div>
+          <div class="output-body" id="out-casu">
+            <span class="output-placeholder">La versión casual aparecerá aquí...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -169,5 +258,209 @@
 
 <script src="js/app.js"></script>
 <script src="js/historial.js"></script>
+
+<!-- ════════════════════════════════════
+     GALAXY BACKGROUND + CONFIG MODAL
+════════════════════════════════════ -->
+<script>
+/* ── EMOCIONES: colores de fondo para cada estado ── */
+const EMOCIONES_BG = [
+  /* calma        */ { b1:'#0d4a2a', b2:'#082a40', b3:'#1a4010', b4:'#062030' },
+  /* frustración  */ { b1:'#5a1010', b2:'#3a0808', b3:'#4a0f0f', b4:'#280505' },
+  /* paz          */ { b1:'#0a1a5e', b2:'#060e3a', b3:'#081530', b4:'#040c28' },
+  /* urgencia     */ { b1:'#5a3a05', b2:'#3a2203', b3:'#4a3008', b4:'#281802' },
+  /* melancolía   */ { b1:'#2a0e52', b2:'#1a0838', b3:'#160a40', b4:'#0e0620' },
+  /* positivismo  */ { b1:'#064838', b2:'#043020', b3:'#0a3c28', b4:'#042818' },
+];
+
+/* Colores claros — más saturados para que se noten sobre fondo blanco */
+const EMOCIONES_BG_LIGHT = [
+  /* calma        */ { b1:'#34c97a', b2:'#1aa0c8', b3:'#6adb50', b4:'#0090b0' },
+  /* frustración  */ { b1:'#f05050', b2:'#c02020', b3:'#e03838', b4:'#a01010' },
+  /* paz          */ { b1:'#4090e8', b2:'#2060c0', b3:'#60a8f0', b4:'#1840a0' },
+  /* urgencia     */ { b1:'#f0a020', b2:'#c07010', b3:'#e8b840', b4:'#a05808' },
+  /* melancolía   */ { b1:'#9060e0', b2:'#6030b8', b3:'#b080f8', b4:'#4820a0' },
+  /* positivismo  */ { b1:'#30c090', b2:'#10a060', b3:'#50d8a8', b4:'#088050' },
+];
+
+let curEmocion = 0;
+let isLightTheme = false;
+
+function applyBgColors(emo) {
+  const colors = isLightTheme ? EMOCIONES_BG_LIGHT[emo] : EMOCIONES_BG[emo];
+  const opacity = isLightTheme ? 0.30 : 0.22;
+  document.getElementById('gb1').style.background = colors.b1;
+  document.getElementById('gb2').style.background = colors.b2;
+  document.getElementById('gb3').style.background = colors.b3;
+  document.getElementById('gb4').style.background = colors.b4;
+  document.querySelectorAll('.galaxy-blob').forEach(b => {
+    b.style.opacity = opacity;
+  });
+}
+
+/* ── STARS CANVAS ── */
+function initStars() {
+  const canvas = document.getElementById('stars-canvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  let W, H;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function createStars() {
+    stars = [];
+    const count = Math.floor((W * H) / 3800);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x:       Math.random() * W,
+        y:       Math.random() * H,
+        r:       Math.random() * 1.2 + 0.2,
+        alpha:   Math.random() * 0.6 + 0.1,
+        speed:   Math.random() * 0.004 + 0.002,
+        phase:   Math.random() * Math.PI * 2,
+        drift:   (Math.random() - 0.5) * 0.04,
+      });
+    }
+  }
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    frame++;
+    const lightBoost = isLightTheme ? 0.55 : 1;
+    stars.forEach(s => {
+      const twinkle = Math.sin(s.phase + frame * s.speed) * 0.4 + 0.6;
+      const alpha = s.alpha * twinkle * lightBoost;
+      ctx.beginPath();
+      ctx.arc(s.x + Math.sin(frame * s.drift * 0.01) * 0.5, s.y, s.r, 0, Math.PI * 2);
+      if (isLightTheme) {
+        ctx.fillStyle = `rgba(60,40,120,${alpha})`;
+      } else {
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      }
+      ctx.fill();
+
+      /* Estrellas grandes con halo */
+      if (s.r > 1.0) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
+        if (isLightTheme) {
+          ctx.fillStyle = `rgba(80,60,160,${alpha * 0.08})`;
+        } else {
+          ctx.fillStyle = `rgba(255,255,255,${alpha * 0.08})`;
+        }
+        ctx.fill();
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  createStars();
+  draw();
+  window.addEventListener('resize', () => { resize(); createStars(); });
+}
+
+/* ── CICLO DE EMOCIONES ── */
+setInterval(() => {
+  curEmocion = (curEmocion + 1) % EMOCIONES_BG.length;
+  applyBgColors(curEmocion);
+}, 6000);
+
+/* ── TOGGLE TEMA ── */
+function toggleTheme() {
+  isLightTheme = !isLightTheme;
+  document.body.classList.toggle('theme-light', isLightTheme);
+
+  const toggle = document.getElementById('cfg-theme-toggle');
+  toggle.classList.toggle('on', isLightTheme);
+  document.getElementById('cfg-theme-sub').textContent = isLightTheme ? 'Modo claro activo' : 'Modo oscuro activo';
+
+  applyBgColors(curEmocion);
+  localStorage.setItem('moodify_theme', isLightTheme ? 'light' : 'dark');
+}
+
+/* ── CONFIG MODAL ── */
+function openConfig() {
+  document.getElementById('cfg-overlay').classList.add('open');
+  /* Actualizar displays */
+  const uname = localStorage.getItem('moodify_username') || 'usuario';
+  document.getElementById('cfg-username-display').textContent = '@' + uname;
+}
+
+function closeConfig() {
+  document.getElementById('cfg-overlay').classList.remove('open');
+}
+
+function closeConfigOutside(e) {
+  if (e.target === document.getElementById('cfg-overlay')) closeConfig();
+}
+
+function setAgentLang(val) {
+  localStorage.setItem('moodify_agent_lang', val);
+}
+
+function startChangeUsername() {
+  const newU = prompt('Nuevo nombre de usuario:');
+  if (!newU || !newU.trim()) return;
+  closeConfig();
+  /* TODO: llamar endpoint PUT /api/perfil/username */
+  alert('Función en desarrollo — próximamente disponible.');
+}
+
+function startChangeEmail() {
+  closeConfig();
+  alert('Para cambiar el correo, recibirás un enlace de verificación. Función en desarrollo.');
+}
+
+function startChangePassword() {
+  closeConfig();
+  /* Reutiliza el flujo de reset password */
+  const email = localStorage.getItem('moodify_email') || '';
+  if (!email) { alert('No se encontró el correo. Cierra sesión e inicia de nuevo.'); return; }
+  fetch(`${API}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).then(() => alert('Si la cuenta existe, recibirás un correo para restablecer tu contraseña.'))
+    .catch(() => alert('Error al enviar el correo. Intenta más tarde.'));
+}
+
+function confirmDeleteAccount() {
+  const ok = confirm('¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.');
+  if (!ok) return;
+  closeConfig();
+  /* TODO: llamar endpoint DELETE /api/cuenta */
+  alert('Función en desarrollo — próximamente disponible.');
+}
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', () => {
+  /* Restaurar tema guardado */
+  const savedTheme = localStorage.getItem('moodify_theme');
+  if (savedTheme === 'light') {
+    isLightTheme = true;
+    document.body.classList.add('theme-light');
+    document.getElementById('cfg-theme-toggle').classList.add('on');
+    document.getElementById('cfg-theme-sub').textContent = 'Modo claro activo';
+  }
+
+  /* Restaurar idioma del agente */
+  const savedLang = localStorage.getItem('moodify_agent_lang');
+  if (savedLang) {
+    const sel = document.getElementById('cfg-lang-select');
+    if (sel) sel.value = savedLang;
+  }
+
+  /* Iniciar estrellas */
+  initStars();
+
+  /* Color inicial */
+  applyBgColors(0);
+});
+</script>
 </body>
 </html>
