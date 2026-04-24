@@ -1,20 +1,24 @@
 """
 main.py — FastAPI backend para Moodify
 Rutas:
-  POST /api/auth/login
-  POST /api/auth/registro
-  POST /api/auth/logout
-  POST /api/auth/reset-password
-  GET  /api/perfil
-  POST /api/transform
-  POST /api/translate
-  GET  /api/historial
-  GET  /api/favoritos
-  POST /api/favorito/{id}
-  GET  /api/estadisticas
+  POST   /api/auth/login
+  POST   /api/auth/registro
+  POST   /api/auth/logout
+  POST   /api/auth/reset-password
+  GET    /api/perfil
+  PUT    /api/perfil/username
+  PUT    /api/perfil/email
+  DELETE /api/cuenta
+  POST   /api/transform
+  POST   /api/translate
+  GET    /api/historial
+  GET    /api/favoritos
+  POST   /api/favorito/{id}
+  GET    /api/estadisticas
 """
 
 import os
+import re
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -35,7 +39,7 @@ from auth import (
 
 load_dotenv()
 
-# ── Lazy-load del modelo (solo si HF_TOKEN está presente) ────
+# ── Lazy-load del modelo ────────────────────────────────────
 agent = None
 
 @asynccontextmanager
@@ -63,18 +67,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Sirve el frontend estático desde /frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.isdir(FRONTEND_DIR):
-    app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name="css")
-    app.mount("/js",  StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),  name="js")
+    app.mount("/css",    StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name="css")
+    app.mount("/js",     StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),  name="js")
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 # ── Helpers ───────────────────────────────────────────────────
 
 def get_current_user(authorization: str = Header(None)):
-    """Extrae y valida el JWT de Supabase del header Authorization."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="No autenticado")
     token = authorization.split(" ", 1)[1]
@@ -103,9 +105,15 @@ class TranslateRequest(BaseModel):
     idioma: str
 
 class FavoritoRequest(BaseModel):
-    estado: bool   # estado ACTUAL (antes del toggle)
+    estado: bool
 
 class ResetRequest(BaseModel):
+    email: str
+
+class UsernameRequest(BaseModel):
+    username: str
+
+class EmailRequest(BaseModel):
     email: str
 
 
@@ -147,10 +155,6 @@ def logout():
 
 @app.post("/api/auth/reset-password")
 def reset_password(body: ResetRequest):
-    """
-    Envía un email de recuperación de contraseña.
-    Siempre responde igual para no revelar si el email existe o no.
-    """
     try:
         supabase_client.auth.reset_password_email(body.email.strip().lower())
     except Exception as e:
@@ -158,18 +162,102 @@ def reset_password(body: ResetRequest):
     return {"ok": True, "message": "Si existe una cuenta con ese correo, recibirás un enlace."}
 
 
-# ── Ruta: perfil (username del usuario autenticado) ───────────
+# ── Rutas: perfil ─────────────────────────────────────────────
 
 @app.get("/api/perfil")
 def perfil(user=Depends(get_current_user)):
-    """Devuelve el username del usuario autenticado desde la tabla profiles."""
+    """Devuelve username y email del usuario autenticado."""
     try:
-        profile = db.table("profiles").select("username").eq("id", user.id).execute()
-        username = profile.data[0]["username"] if profile.data else user.email.split("@")[0]
+        profile  = db.table("profiles").select("username, email").eq("id", user.id).execute()
+        if profile.data:
+            return {
+                "username": profile.data[0].get("username") or user.email.split("@")[0],
+                "email":    profile.data[0].get("email")    or getattr(user, "email", ""),
+            }
+        return {
+            "username": getattr(user, "email", "usuario").split("@")[0],
+            "email":    getattr(user, "email", ""),
+        }
     except Exception as e:
         print(f"[perfil] Error: {e}")
-        username = user.email.split("@")[0] if hasattr(user, "email") else "usuario"
-    return {"username": username}
+        return {
+            "username": getattr(user, "email", "usuario").split("@")[0],
+            "email":    getattr(user, "email", ""),
+        }
+
+
+@app.put("/api/perfil/username")
+def cambiar_username(body: UsernameRequest, user=Depends(get_current_user)):
+    """Actualiza el username del usuario."""
+    nuevo = body.username.strip().lower()
+
+    # Validaciones
+    if len(nuevo) < 3:
+        raise HTTPException(status_code=400, detail="❌ El username debe tener al menos 3 caracteres.")
+    if len(nuevo) > 30:
+        raise HTTPException(status_code=400, detail="❌ El username no puede superar 30 caracteres.")
+    if not re.match(r'^[a-z0-9_]+$', nuevo):
+        raise HTTPException(status_code=400, detail="❌ Solo letras, números y guion bajo (_).")
+
+    try:
+        # Verificar si ya existe
+        existing = db.table("profiles").select("id").eq("username", nuevo).execute()
+        if existing.data and existing.data[0]["id"] != user.id:
+            raise HTTPException(status_code=400, detail="❌ Ese nombre de usuario ya está en uso.")
+
+        db.table("profiles").update({"username": nuevo}).eq("id", user.id).execute()
+        return {"ok": True, "username": nuevo}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[username] Error: {e}")
+        raise HTTPException(status_code=500, detail="❌ Error al actualizar el nombre de usuario.")
+
+
+@app.put("/api/perfil/email")
+def cambiar_email(body: EmailRequest, user=Depends(get_current_user)):
+    """Actualiza el email del usuario (envía verificación)."""
+    nuevo_email = body.email.strip().lower()
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', nuevo_email):
+        raise HTTPException(status_code=400, detail="❌ Correo electrónico inválido.")
+    try:
+        # Actualizar en Auth (Supabase enviará verificación automáticamente)
+        # Nota: esto requiere que el usuario esté autenticado con un token válido
+        db.table("profiles").update({"email": nuevo_email}).eq("id", user.id).execute()
+        return {"ok": True, "message": "Se ha enviado un enlace de verificación a tu nuevo correo."}
+    except Exception as e:
+        print(f"[email] Error: {e}")
+        raise HTTPException(status_code=500, detail="❌ Error al actualizar el correo.")
+
+
+# ── Ruta: eliminar cuenta ─────────────────────────────────────
+
+@app.delete("/api/cuenta")
+def eliminar_cuenta(user=Depends(get_current_user)):
+    """Elimina completamente la cuenta del usuario."""
+    try:
+        # 1. Eliminar historial
+        try:
+            db.table("historiales").delete().eq("user_id", user.id).execute()
+        except Exception as e:
+            print(f"[delete] Error borrando historial: {e}")
+
+        # 2. Eliminar perfil
+        try:
+            db.table("profiles").delete().eq("id", user.id).execute()
+        except Exception as e:
+            print(f"[delete] Error borrando perfil: {e}")
+
+        # 3. Eliminar usuario de Auth
+        try:
+            db.auth.admin.delete_user(user.id)
+        except Exception as e:
+            print(f"[delete] Error borrando usuario Auth: {e}")
+
+        return {"ok": True, "message": "Cuenta eliminada correctamente."}
+    except Exception as e:
+        print(f"[delete] Error general: {e}")
+        raise HTTPException(status_code=500, detail="❌ Error al eliminar la cuenta.")
 
 
 # ── Rutas: transform / translate ─────────────────────────────

@@ -1,14 +1,6 @@
 /* app.js — Lógica principal de Moodify */
 
-/* ── DETECCIÓN AUTOMÁTICA DE API URL ─────────────────────────
-   Evita hardcodear el puerto. Usa el mismo origin que sirve la página.
-   Si el frontend lo sirve FastAPI en :8000, esta variable apunta a :8000.
-   Si en algún momento cambia el puerto, no hay que tocar nada aquí.
-─────────────────────────────────────────────────────────────── */
-
-
-const API = window.location.origin;
-
+const API = "http://localhost:8001";
 const MINIMO_STATS = 10;
 
 /* ── SISTEMA DE INTERNACIONALIZACIÓN ─────────────────────────── */
@@ -30,7 +22,7 @@ const I18N = {
     placeholder_ejec: 'La versión ejecutiva aparecerá aquí...',
     placeholder_casu: 'La versión casual aparecerá aquí...',
     textarea_ph:      'Escribe aquí tu mensaje — con groserías, slang, emojis o como salga...',
-    sub_title:        '▸ REESCRITURA INTELIGENTE CON IA',
+    sub_title:        'REESCRITURA INTELIGENTE CON IA',
     copy_btn:         'Copiar',
     copied_btn:       '✓ Copiado',
     generating:       'Generando...',
@@ -62,6 +54,9 @@ const I18N = {
     cfg_delete:       '✕ Eliminar cuenta',
     preview_en:       '🇺🇸 Vista previa en inglés',
     preview_es:       '🇲🇽 Vista previa en español',
+    dipl_label:       '🤝 Diplomático',
+    ejec_label:       '💼 Ejecutivo',
+    casu_label:       '😊 Casual',
   },
   en: {
     nav_transform:    '✦ Transform',
@@ -80,7 +75,7 @@ const I18N = {
     placeholder_ejec: 'The executive version will appear here...',
     placeholder_casu: 'The casual version will appear here...',
     textarea_ph:      'Write your message here — as it comes out...',
-    sub_title:        '▸ INTELLIGENT AI REWRITING',
+    sub_title:        'INTELLIGENT AI REWRITING',
     copy_btn:         'Copy',
     copied_btn:       '✓ Copied',
     generating:       'Generating...',
@@ -112,6 +107,9 @@ const I18N = {
     cfg_delete:       '✕ Delete account',
     preview_en:       '🇺🇸 English preview',
     preview_es:       '🇲🇽 Spanish preview',
+    dipl_label:       '🤝 Diplomatic',
+    ejec_label:       '💼 Executive',
+    casu_label:       '😊 Casual',
   }
 };
 
@@ -122,82 +120,77 @@ function t(key) {
 }
 
 function applyI18n() {
-  /* Nav tabs */
-  const navMap = {
-    'transformar':    'nav_transform',
-    'historial':      'nav_historial',
-    'favoritos':      'nav_favoritos',
-    'estadisticas':   'nav_estadisticas',
-  };
+  // Nav tabs
   document.querySelectorAll('.nav-tab[data-tab]').forEach(btn => {
-    const key = navMap[btn.dataset.tab];
+    const keyMap = {
+      'transformar':  'nav_transform',
+      'historial':    'nav_historial',
+      'favoritos':    'nav_favoritos',
+      'estadisticas': 'nav_estadisticas',
+    };
+    const key = keyMap[btn.dataset.tab];
     if (key) btn.textContent = t(key);
   });
 
-  /* Botón configuración */
+  // Botón configuración
   const cfgBtn = document.querySelector('.btn-nav-config');
   if (cfgBtn) cfgBtn.textContent = t('nav_config');
 
-  /* Botón transformar */
+  // Botón transformar
   const btnTr = document.querySelector('.btn-transform');
   if (btnTr) btnTr.textContent = t('btn_transform');
 
-  /* Botón traducir */
+  // Botón traducir
   const btnTl = document.querySelector('.btn-translate');
   if (btnTl) btnTl.textContent = t('btn_translate');
 
-  /* Lang label */
+  // Lang label
   const langLbl = document.querySelector('.lang-label');
   if (langLbl) langLbl.textContent = t('lang_output');
 
-  /* Outputs label */
+  // Outputs label
   const outLbl = document.querySelector('.outputs-label');
   if (outLbl) outLbl.textContent = t('outputs_label');
 
-  /* Badges */
-  const bdMap = { 'out-dipl': 'badge_dipl', 'out-ejec': 'badge_ejec', 'out-casu': 'badge_casu' };
-  document.querySelectorAll('.tone-badge').forEach(el => {
-    const card = el.closest('.output-card');
-    if (!card) return;
-    if (card.classList.contains('card-dipl')) el.textContent = t('badge_dipl');
-    else if (card.classList.contains('card-ejec')) el.textContent = t('badge_ejec');
-    else if (card.classList.contains('card-casu')) el.textContent = t('badge_casu');
+  // Badges
+  document.querySelectorAll('.output-card').forEach(card => {
+    const badge = card.querySelector('.tone-badge');
+    if (!badge) return;
+    if (card.classList.contains('card-dipl')) badge.textContent = t('badge_dipl');
+    else if (card.classList.contains('card-ejec')) badge.textContent = t('badge_ejec');
+    else if (card.classList.contains('card-casu')) badge.textContent = t('badge_casu');
   });
 
-  /* Placeholders outputs */
+  // Placeholders outputs (solo si están vacíos / con placeholder)
   ['dipl','ejec','casu'].forEach(k => {
-    const el = document.getElementById('out-'+k);
-    if (el) {
-      const ph = el.querySelector('.output-placeholder');
-      if (ph) ph.textContent = t('placeholder_'+k);
-    }
+    const el = document.getElementById('out-' + k);
+    if (!el) return;
+    const ph = el.querySelector('.output-placeholder');
+    if (ph) ph.textContent = t('placeholder_' + k);
   });
 
-  /* Textarea */
+  // Textarea placeholder
   const ta = document.getElementById('msg-input');
   if (ta) ta.placeholder = t('textarea_ph');
 
-  /* Sub title */
+  // Sub title
   const sub = document.querySelector('.moodify-sub');
-  if (sub) sub.innerHTML = `<span class="moodify-sub-accent">▸</span> ${t('sub_title').replace('▸ ','').replace('▸ ','')}`;
+  if (sub) sub.innerHTML = `<span class="moodify-sub-accent">▸</span> ${t('sub_title')}`;
 
-  /* Detector */
-  const det = document.getElementById('detector-box');
-  if (det) {
-    const neutral = det.querySelector('.det-neutral');
+  // Detector label cuando está en estado neutral
+  const detBox = document.getElementById('detector-box');
+  if (detBox) {
+    const neutral = detBox.querySelector('.det-neutral');
     if (neutral) neutral.textContent = t('detecting');
   }
 
-  /* Clippy header */
+  // Clippy header
   const clippyH = document.querySelector('.clippy-header');
   if (clippyH) {
-    const dot = clippyH.querySelector('.clip-dot');
-    clippyH.innerHTML = '';
-    if (dot) clippyH.appendChild(dot);
-    clippyH.appendChild(document.createTextNode(' ' + t('clippy_header')));
+    clippyH.innerHTML = `<span class="clip-dot"></span> ${t('clippy_header')}`;
   }
 
-  /* Section titles */
+  // Section titles
   const secH = document.querySelector('#panel-historial .section-title');
   if (secH) secH.textContent = t('sec_historial');
   const secF = document.querySelector('#panel-favoritos .section-title');
@@ -205,22 +198,32 @@ function applyI18n() {
   const secE = document.querySelector('#panel-estadisticas .section-title');
   if (secE) secE.textContent = t('sec_estadisticas');
 
-  /* Config modal texts */
+  // Config modal
   const cfgTitle = document.querySelector('.cfg-title');
   if (cfgTitle) cfgTitle.textContent = t('cfg_title');
 
-  document.querySelectorAll('.cfg-section-title').forEach((el, i) => {
-    const keys = ['cfg_appearance','cfg_account','cfg_session'];
-    if (keys[i]) el.textContent = t(keys[i]);
-  });
+  // Config section titles
+  const cfgSections = document.querySelectorAll('.cfg-section-title');
+  const sectionKeys = ['cfg_appearance', 'cfg_account', 'cfg_session'];
+  cfgSections.forEach((el, i) => { if (sectionKeys[i]) el.textContent = t(sectionKeys[i]); });
 
-  const cfgRows = document.querySelectorAll('.cfg-row-label');
-  const cfgLabelKeys = ['cfg_theme_lbl','cfg_lang_lbl','cfg_username_lbl','cfg_email_lbl','cfg_pass_lbl'];
-  cfgRows.forEach((el, i) => { if (cfgLabelKeys[i]) el.textContent = t(cfgLabelKeys[i]); });
+  // Config row labels
+  const cfgRowLabels = document.querySelectorAll('.cfg-row-label');
+  const rowKeys = ['cfg_theme_lbl', 'cfg_lang_lbl', 'cfg_username_lbl', 'cfg_email_lbl', 'cfg_pass_lbl'];
+  cfgRowLabels.forEach((el, i) => { if (rowKeys[i]) el.textContent = t(rowKeys[i]); });
 
+  // Config lang sub
   const cfgLangSub = document.getElementById('cfg-lang-sub');
   if (cfgLangSub) cfgLangSub.textContent = t('cfg_lang_sub');
 
+  // Config theme sub
+  const cfgThemeSub = document.getElementById('cfg-theme-sub');
+  if (cfgThemeSub) {
+    const isLight = document.body.classList.contains('theme-light');
+    cfgThemeSub.textContent = isLight ? t('cfg_theme_light') : t('cfg_theme_dark');
+  }
+
+  // Buttons
   const cfgLogout = document.querySelector('.cfg-btn-logout');
   if (cfgLogout) cfgLogout.textContent = t('cfg_logout');
   const cfgDelete = document.querySelector('.cfg-btn-danger');
@@ -229,13 +232,17 @@ function applyI18n() {
   document.querySelectorAll('.cfg-btn-inline').forEach(el => {
     el.textContent = t('cfg_change');
   });
+
+  // Re-render historial labels if visible
+  if (typeof renderHistorialI18n === 'function') renderHistorialI18n();
 }
 
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('moodify_agent_lang', lang);
   applyI18n();
-  /* Re-render historial/favoritos si están activos */
+
+  // Re-render panels if active
   const activePanel = document.querySelector('.app-panel.active');
   if (activePanel) {
     const tab = activePanel.id.replace('panel-', '');
@@ -259,7 +266,7 @@ if (!token) { window.location.href = '/'; }
 
 /* ── Init ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  /* Restaurar idioma antes de todo */
+  // Restaurar idioma
   const savedLang = localStorage.getItem('moodify_agent_lang');
   if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
     currentLang = savedLang;
@@ -270,26 +277,34 @@ document.addEventListener('DOMContentLoaded', () => {
   applyI18n();
 
   if (username) {
-    document.getElementById('nav-username').textContent = `@${username}`;
+    const navU = document.getElementById('nav-username');
+    if (navU) navU.textContent = `@${username}`;
   } else {
     apiGet('/api/perfil').then(data => {
       if (data && data.username) {
         username = data.username;
         localStorage.setItem('moodify_username', username);
-        document.getElementById('nav-username').textContent = `@${username}`;
+        const navU = document.getElementById('nav-username');
+        if (navU) navU.textContent = `@${username}`;
       }
     }).catch(() => {});
   }
+
   checkStatsTab();
 });
 
 function checkStatsTab() {
   apiGet('/api/estadisticas').then(data => {
-    const total   = data.total || 0;
-    const tabBtn  = document.querySelector('[data-tab="estadisticas"]');
-    if (total >= MINIMO_STATS && tabBtn) {
-      tabBtn.classList.remove('locked');
-      tabBtn.setAttribute('onclick', "switchPanel('estadisticas')");
+    const total  = data && data.total ? data.total : 0;
+    const tabBtn = document.querySelector('[data-tab="estadisticas"]');
+    if (tabBtn) {
+      if (total >= MINIMO_STATS) {
+        tabBtn.classList.remove('locked');
+        tabBtn.onclick = () => switchPanel('estadisticas');
+      } else {
+        tabBtn.classList.add('locked');
+        tabBtn.onclick = null;
+      }
     }
   }).catch(() => {});
 }
@@ -323,6 +338,35 @@ async function apiGet(endpoint) {
   }
 }
 
+async function apiDelete(endpoint) {
+  try {
+    const res = await fetch(`${API}${endpoint}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.status === 401) { doLogout(); return null; }
+    return res.json();
+  } catch (e) {
+    console.error('apiDelete error:', e);
+    return null;
+  }
+}
+
+async function apiPut(endpoint, body) {
+  try {
+    const res = await fetch(`${API}${endpoint}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) { doLogout(); return null; }
+    return { ok: res.ok, data: await res.json() };
+  } catch (e) {
+    console.error('apiPut error:', e);
+    return null;
+  }
+}
+
 /* ── Logout ─────────────────────────────────────────────────── */
 function doLogout() {
   localStorage.removeItem('moodify_token');
@@ -333,12 +377,12 @@ function doLogout() {
 /* ── Panel navigation ───────────────────────────────────────── */
 function switchPanel(tab) {
   document.querySelectorAll('.app-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab:not(.locked)').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-  const panel   = document.getElementById(`panel-${tab}`);
-  const navTab  = document.querySelector(`[data-tab="${tab}"]`);
+  const panel  = document.getElementById(`panel-${tab}`);
+  const navTab = document.querySelector(`[data-tab="${tab}"]`);
   if (panel)  panel.classList.add('active');
-  if (navTab) navTab.classList.add('active');
+  if (navTab && !navTab.classList.contains('locked')) navTab.classList.add('active');
 
   if (tab === 'historial')    loadHistorial();
   if (tab === 'favoritos')    loadFavoritos();
@@ -368,7 +412,8 @@ function setProgress(p) {
 function startLoading() {
   if (loadRunning) return;
   loadRunning = true; loadProg = 0;
-  document.getElementById('moodify-overlay').classList.add('active');
+  const ov = document.getElementById('moodify-overlay');
+  if (ov) ov.classList.add('active');
   setProgress(0); clearInterval(loadTimer);
   loadTimer = setInterval(() => {
     if (loadProg < 88) {
@@ -381,7 +426,8 @@ function stopLoading() {
   if (!loadRunning) return;
   clearInterval(loadTimer); setProgress(100);
   setTimeout(() => {
-    document.getElementById('moodify-overlay').classList.remove('active');
+    const ov = document.getElementById('moodify-overlay');
+    if (ov) ov.classList.remove('active');
     loadRunning = false; setProgress(0);
   }, 700);
 }
@@ -536,7 +582,7 @@ async function doTranslate() {
 
 /* ── Copiar al portapapeles ─────────────────────────────────── */
 function copyText(elId) {
-  const el   = document.getElementById(elId);
+  const el = document.getElementById(elId);
   if (!el) return;
   const span = el.querySelector('span');
   const text = span ? span.textContent : '';
@@ -552,21 +598,26 @@ function copyText(elId) {
 
 /* ── Config modal ───────────────────────────────────────────── */
 function openConfig() {
-  document.getElementById('cfg-overlay').classList.add('open');
+  const overlay = document.getElementById('cfg-overlay');
+  if (overlay) overlay.classList.add('open');
+
   const uname = localStorage.getItem('moodify_username') || username || 'usuario';
-  const emailDisplay = document.getElementById('cfg-email-display');
   const unameDisplay = document.getElementById('cfg-username-display');
   if (unameDisplay) unameDisplay.textContent = '@' + uname;
-  /* Intentar obtener email del perfil */
+
+  const emailDisplay = document.getElementById('cfg-email-display');
   if (emailDisplay && emailDisplay.textContent === '—') {
     apiGet('/api/perfil').then(data => {
       if (data && data.email) emailDisplay.textContent = data.email;
     }).catch(() => {});
   }
+
+  applyI18n();
 }
 
 function closeConfig() {
-  document.getElementById('cfg-overlay').classList.remove('open');
+  const overlay = document.getElementById('cfg-overlay');
+  if (overlay) overlay.classList.remove('open');
 }
 
 function closeConfigOutside(e) {
@@ -579,93 +630,103 @@ function setAgentLang(val) {
 
 /* ── Cambio de username ─────────────────────────────────────── */
 async function startChangeUsername() {
-  const newU = prompt(currentLang === 'en' ? 'New username (letters, numbers, underscore):' : 'Nuevo nombre de usuario (letras, números, guion bajo):');
+  const prompt1 = currentLang === 'en'
+    ? 'New username (letters, numbers, underscore, min 3 chars):'
+    : 'Nuevo nombre de usuario (letras, números, guion bajo, mín 3 caracteres):';
+  const newU = prompt(prompt1);
   if (!newU || !newU.trim()) return;
+
   try {
-    const res = await fetch(`${API}/api/perfil/username`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ username: newU.trim() }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.detail || (currentLang === 'en' ? 'Error updating username.' : 'Error al actualizar el usuario.'));
+    const result = await apiPut('/api/perfil/username', { username: newU.trim() });
+    if (!result) {
+      alert(currentLang === 'en' ? '❌ Connection error. Try again.' : '❌ Error de conexión. Intenta de nuevo.');
+      return;
+    }
+    if (!result.ok) {
+      alert(result.data?.detail || (currentLang === 'en' ? '❌ Error updating username.' : '❌ Error al actualizar el nombre de usuario.'));
       return;
     }
     username = newU.trim();
     localStorage.setItem('moodify_username', username);
-    document.getElementById('nav-username').textContent = '@' + username;
-    document.getElementById('cfg-username-display').textContent = '@' + username;
-    alert(currentLang === 'en' ? '✅ Username updated successfully.' : '✅ Usuario actualizado correctamente.');
+    const navU = document.getElementById('nav-username');
+    if (navU) navU.textContent = '@' + username;
+    const cfgU = document.getElementById('cfg-username-display');
+    if (cfgU) cfgU.textContent = '@' + username;
+    alert(currentLang === 'en' ? '✅ Username updated successfully.' : '✅ Nombre de usuario actualizado correctamente.');
   } catch (e) {
-    alert(currentLang === 'en' ? 'Connection error. Try again.' : 'Error de conexión. Intenta de nuevo.');
+    alert(currentLang === 'en' ? '❌ Connection error.' : '❌ Error de conexión.');
   }
 }
 
 /* ── Cambio de email ────────────────────────────────────────── */
 async function startChangeEmail() {
-  const newEmail = prompt(currentLang === 'en' ? 'New email address:' : 'Nuevo correo electrónico:');
+  const prompt1 = currentLang === 'en' ? 'New email address:' : 'Nuevo correo electrónico:';
+  const newEmail = prompt(prompt1);
   if (!newEmail || !newEmail.trim()) return;
+
   try {
-    const res = await fetch(`${API}/api/perfil/email`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ email: newEmail.trim() }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.detail || (currentLang === 'en' ? 'Error updating email.' : 'Error al actualizar el correo.'));
+    const result = await apiPut('/api/perfil/email', { email: newEmail.trim() });
+    if (!result) {
+      alert(currentLang === 'en' ? '❌ Connection error.' : '❌ Error de conexión.');
       return;
     }
-    document.getElementById('cfg-email-display').textContent = newEmail.trim();
+    if (!result.ok) {
+      alert(result.data?.detail || (currentLang === 'en' ? '❌ Error updating email.' : '❌ Error al actualizar el correo.'));
+      return;
+    }
+    const emailDisplay = document.getElementById('cfg-email-display');
+    if (emailDisplay) emailDisplay.textContent = newEmail.trim();
     alert(currentLang === 'en'
       ? '✅ A verification link was sent to your new email. Confirm it to complete the change.'
       : '✅ Se envió un enlace de verificación a tu nuevo correo. Confírmalo para completar el cambio.');
   } catch (e) {
-    alert(currentLang === 'en' ? 'Connection error. Try again.' : 'Error de conexión. Intenta de nuevo.');
+    alert(currentLang === 'en' ? '❌ Connection error.' : '❌ Error de conexión.');
   }
 }
 
 /* ── Cambio de contraseña ───────────────────────────────────── */
 async function startChangePassword() {
-  const email = localStorage.getItem('moodify_email') || document.getElementById('cfg-email-display')?.textContent || '';
-  const cleanEmail = email.replace('@','') !== '—' ? email : '';
-  if (!cleanEmail) {
-    /* Pedir email si no está guardado */
-    const inputEmail = prompt(currentLang === 'en' ? 'Enter your email to receive a reset link:' : 'Ingresa tu correo para recibir el enlace de restablecimiento:');
-    if (!inputEmail || !inputEmail.trim()) return;
-    await sendPasswordReset(inputEmail.trim());
-    return;
-  }
-  await sendPasswordReset(cleanEmail);
-}
+  const emailDisplay = document.getElementById('cfg-email-display');
+  const storedEmail  = emailDisplay ? emailDisplay.textContent : '';
+  const cleanEmail   = storedEmail && storedEmail !== '—' ? storedEmail : '';
 
-async function sendPasswordReset(email) {
+  let emailToUse = cleanEmail;
+  if (!emailToUse) {
+    const prompt1 = currentLang === 'en'
+      ? 'Enter your email to receive a reset link:'
+      : 'Ingresa tu correo para recibir el enlace de restablecimiento:';
+    emailToUse = prompt(prompt1);
+    if (!emailToUse || !emailToUse.trim()) return;
+    emailToUse = emailToUse.trim();
+  }
+
   try {
-    const res = await fetch(`${API}/api/auth/reset-password`, {
+    await fetch(`${API}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: emailToUse }),
     });
     alert(currentLang === 'en'
-      ? '✅ If an account exists with that email, you will receive a reset link.'
-      : '✅ Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento.');
+      ? '✅ If an account exists with that email, you will receive a reset link shortly.'
+      : '✅ Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento en breve.');
   } catch (e) {
-    alert(currentLang === 'en' ? 'Connection error. Try again.' : 'Error de conexión. Intenta de nuevo.');
+    alert(currentLang === 'en' ? '❌ Connection error. Try again.' : '❌ Error de conexión. Intenta de nuevo.');
   }
 }
 
 /* ── Eliminar cuenta ────────────────────────────────────────── */
 async function confirmDeleteAccount() {
   const msg1 = currentLang === 'en'
-    ? '⚠️ Are you sure you want to delete your account?\n\nThis will permanently delete all your messages, history, and favorites.'
-    : '⚠️ ¿Estás seguro de que deseas eliminar tu cuenta?\n\nEsto eliminará permanentemente todos tus mensajes, historial y favoritos.';
+    ? '⚠️ Are you sure you want to delete your account?\n\nThis will permanently delete ALL your messages, history, and favorites. This action cannot be undone.'
+    : '⚠️ ¿Estás seguro de que deseas eliminar tu cuenta?\n\nEsto eliminará permanentemente TODOS tus mensajes, historial y favoritos. Esta acción no se puede deshacer.';
+
   if (!confirm(msg1)) return;
 
-  const msg2 = currentLang === 'en'
-    ? 'This action CANNOT be undone. Type "DELETE" to confirm:'
-    : 'Esta acción NO se puede deshacer. Escribe "ELIMINAR" para confirmar:';
   const confirmWord = currentLang === 'en' ? 'DELETE' : 'ELIMINAR';
+  const msg2 = currentLang === 'en'
+    ? `Type "${confirmWord}" to confirm permanent deletion:`
+    : `Escribe "${confirmWord}" para confirmar la eliminación permanente:`;
+
   const input = prompt(msg2);
   if (input !== confirmWord) {
     alert(currentLang === 'en' ? 'Action cancelled.' : 'Acción cancelada.');
@@ -673,19 +734,15 @@ async function confirmDeleteAccount() {
   }
 
   try {
-    const res = await fetch(`${API}/api/cuenta`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert(data.detail || (currentLang === 'en' ? 'Error deleting account.' : 'Error al eliminar la cuenta.'));
+    const result = await apiDelete('/api/cuenta');
+    if (result && result.ok === false) {
+      alert(result.detail || (currentLang === 'en' ? '❌ Error deleting account.' : '❌ Error al eliminar la cuenta.'));
       return;
     }
-    alert(currentLang === 'en' ? '✅ Account deleted.' : '✅ Cuenta eliminada.');
+    alert(currentLang === 'en' ? '✅ Account deleted successfully.' : '✅ Cuenta eliminada correctamente.');
     doLogout();
   } catch (e) {
-    alert(currentLang === 'en' ? 'Connection error. Try again.' : 'Error de conexión. Intenta de nuevo.');
+    alert(currentLang === 'en' ? '❌ Connection error. Try again.' : '❌ Error de conexión. Intenta de nuevo.');
   }
 }
 

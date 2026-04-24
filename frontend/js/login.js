@@ -1,7 +1,6 @@
 /* login.js — Auth + ciclo emocional del fondo */
 
-//const API = 'http://localhost:8000';
-const API = window.location.origin;
+const API = "http://localhost:8001";
 
 // ── Ciclo emocional ──────────────────────────────────────────
 const EMOCIONES = [
@@ -142,23 +141,6 @@ function clearMsg() {
   document.querySelectorAll('.login-msg').forEach(el => { el.textContent = ''; el.className = 'login-msg'; });
 }
 
-// ── fetch con timeout configurable ───────────────────────────
-async function fetchWithTimeout(url, options, timeoutMs = 20000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      throw new Error('TIMEOUT');
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 // ── Guard: evita doble submit ─────────────────────────────────
 let _loginPending    = false;
 let _registroPending = false;
@@ -176,43 +158,36 @@ async function doLogin() {
   clearMsg();
 
   try {
-    // Timeout de 20s para dar margen a los reintentos del backend con Supabase
-    const res = await fetchWithTimeout(
-      `${API}/api/auth/login`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      },
-      20000
-    );
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-    // Intentar parsear siempre, incluso en errores
     let data;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error('PARSE_ERROR');
-    }
+    try { data = await res.json(); } catch { throw new Error('PARSE_ERROR'); }
 
     if (!res.ok) {
       showMsg('msg-login', data.detail || '❌ Correo o contraseña incorrectos.', false);
       return;
     }
 
-    // Éxito
+    // Éxito — limpiar y redirigir
     document.getElementById('login-email').value = '';
     document.getElementById('login-pass').value  = '';
 
     localStorage.setItem('moodify_token',    data.token);
     localStorage.setItem('moodify_username', data.username);
-    window.location.href = '/app';
+    showMsg('msg-login', '✅ ¡Bienvenido! Cargando...', true);
+
+    // Pequeño delay para que el usuario vea el mensaje de éxito
+    setTimeout(() => { window.location.href = '/app'; }, 400);
 
   } catch (e) {
-    if (e.message === 'TIMEOUT') {
-      showMsg('msg-login', '⏳ El servidor está tardando. Intenta de nuevo en unos segundos.', false);
-    } else if (e.message === 'PARSE_ERROR') {
+    if (e.message === 'PARSE_ERROR') {
       showMsg('msg-login', '❌ Respuesta inesperada del servidor. Intenta de nuevo.', false);
+    } else if (e.name === 'TypeError' && e.message.includes('fetch')) {
+      showMsg('msg-login', '❌ No se pudo conectar al servidor.', false);
     } else {
       showMsg('msg-login', '❌ Error de conexión. ¿Está corriendo el backend?', false);
     }
@@ -241,23 +216,14 @@ async function doRegistro() {
   clearMsg();
 
   try {
-    // Timeout de 25s — el registro hace más operaciones (select + sign_up + insert)
-    const res = await fetchWithTimeout(
-      `${API}/api/auth/registro`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
-      },
-      25000
-    );
+    const res = await fetch(`${API}/api/auth/registro`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, username }),
+    });
 
     let data;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error('PARSE_ERROR');
-    }
+    try { data = await res.json(); } catch { throw new Error('PARSE_ERROR'); }
 
     if (!res.ok) {
       showMsg('msg-registro', data.detail || '❌ No se pudo crear la cuenta.', false);
@@ -278,9 +244,7 @@ async function doRegistro() {
     }, 1400);
 
   } catch (e) {
-    if (e.message === 'TIMEOUT') {
-      showMsg('msg-registro', '⏳ El servidor tardó demasiado. Verifica en "Iniciar sesión" si tu cuenta fue creada.', false);
-    } else if (e.message === 'PARSE_ERROR') {
+    if (e.message === 'PARSE_ERROR') {
       showMsg('msg-registro', '❌ Respuesta inesperada del servidor. Intenta de nuevo.', false);
     } else {
       showMsg('msg-registro', '❌ Error de conexión. ¿Está corriendo el backend?', false);
