@@ -6,208 +6,17 @@
   <title>Moodify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
   <link rel="icon" type="image/png" href="/static/icono.png">
-
-  <style>
-    /* ── TIPOGRAFÍA ELEGANTE PARA EL TÍTULO ── */
-    .moodify-titulo {
-      font-family: 'DM Serif Display', 'Cormorant Garamond', Georgia, serif !important;
-      font-size: 4.8rem !important;
-      font-weight: 400 !important;
-      letter-spacing: -1px !important;
-      line-height: 0.9 !important;
-    }
-
-    body.theme-light .moodify-titulo { color: #1a1a1a; }
-
-    /* ── OJOS REDISEÑADOS — MÁS DRAMÁTICOS Y SINCRONIZADOS ── */
-    .eyes-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      position: relative;
-      top: 4px;
-      margin: 0 8px;
-    }
-
-    .eye-unit {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .brow {
-      width: 34px;
-      height: 3.5px;
-      border-radius: 3px;
-      background: #fff;
-      transform-origin: center;
-      transition: background 0.4s ease, transform 0.3s ease;
-      animation: brow-sync 5s ease-in-out infinite;
-    }
-    body.theme-light .brow { background: #111; }
-
-    @keyframes brow-sync {
-      0%, 30%   { transform: translateY(0) rotate(0deg); }
-      35%        { transform: translateY(-3px) rotate(-8deg); }  /* expresión curiosa */
-      45%        { transform: translateY(0) rotate(0deg); }
-      70%        { transform: translateY(2px) rotate(0deg); }    /* cansancio */
-      80%        { transform: translateY(0) rotate(0deg); }
-      85%        { transform: translateY(-4px) rotate(-12deg); } /* sorpresa = cierre de ojo */
-      92%        { transform: translateY(0) rotate(0deg); }
-      100%       { transform: translateY(0) rotate(0deg); }
-    }
-
-    .eye {
-      width: 44px;
-      height: 44px;
-      background: rgba(0,0,0,0.85);
-      border: 2.5px solid rgba(255,255,255,0.9);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.4s ease, background 0.4s ease;
-    }
-    body.theme-light .eye {
-      background: #fff;
-      border-color: #1a1a1a;
-    }
-
-    /* Pupila — tamaño real y movimiento sincronizado */
-    .eye::after {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.15);
-      animation: look-sync 8s ease-in-out infinite;
-    }
-    body.theme-light .eye::after {
-      background: #1a1a1a;
-      box-shadow: 0 0 0 4px rgba(0,0,0,0.08);
-    }
-
-    /* Brillo de la pupila */
-    .eye::before {
-      content: '';
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.7);
-      top: 9px;
-      left: 11px;
-      z-index: 2;
-      animation: glint-sync 8s ease-in-out infinite;
-    }
-    body.theme-light .eye::before {
-      background: rgba(255,255,255,0.9);
-    }
-
-    /* AMBOS OJOS EXACTAMENTE SINCRONIZADOS — misma animación */
-    @keyframes look-sync {
-      0%          { transform: translate(0px, 0px); }
-      8%          { transform: translate(5px, -4px); }   /* mira arriba-derecha */
-      18%         { transform: translate(5px, -4px); }
-      26%         { transform: translate(-5px, 2px); }   /* mira abajo-izquierda */
-      34%         { transform: translate(-5px, 2px); }
-      40%         { transform: translate(0px, 5px); }    /* mira abajo */
-      48%         { transform: translate(0px, 5px); }
-      56%         { transform: translate(4px, -2px); }   /* mira derecha */
-      64%         { transform: translate(4px, -2px); }
-      72%         { transform: translate(0px, 0px); }    /* centro */
-      /* PARPADEO SINCRONIZADO */
-      80%         { transform: translate(0px, 0px); }
-      83%         { transform: translate(0px, 12px); }   /* baja la pupila al parpadear */
-      86%         { transform: translate(0px, 0px); }
-      100%        { transform: translate(0px, 0px); }
-    }
-
-    @keyframes glint-sync {
-      0%, 79%     { opacity: 1; transform: translate(0,0); }
-      83%         { opacity: 0; }
-      86%, 100%   { opacity: 1; transform: translate(0,0); }
-    }
-
-    /* Animación de parpadeo — SINCRONIZADA para ambos ojos */
-    #eye1, #eye2 {
-      animation: blink-sync 5s ease-in-out infinite;
-    }
-
-    @keyframes blink-sync {
-      0%, 79%, 100%  { transform: scaleY(1); }
-      82%             { transform: scaleY(0.04); }
-      85%             { transform: scaleY(1); }
-    }
-
-    /* Halo sutil alrededor de los ojos */
-    .eye-unit:hover .eye {
-      box-shadow: 0 0 20px rgba(184,240,0,0.35), 0 0 40px rgba(184,240,0,0.15);
-      border-color: #B8F000;
-    }
-    .eye-unit:hover .brow {
-      background: #B8F000;
-    }
-
-    /* ── FONDO MÁS OSCURO EN DARK MODE ── */
-    body:not(.theme-light) {
-      background: #030507 !important;
-    }
-
-    body:not(.theme-light) #gb1 { opacity: 0.12 !important; }
-    body:not(.theme-light) #gb2 { opacity: 0.10 !important; }
-    body:not(.theme-light) #gb3 { opacity: 0.09 !important; }
-    body:not(.theme-light) #gb4 { opacity: 0.07 !important; }
-
-    body:not(.theme-light) .top-nav {
-      background: rgba(5, 8, 5, 0.75) !important;
-      border-color: rgba(255,255,255,0.07) !important;
-    }
-
-    body:not(.theme-light) .output-card {
-      background: rgba(255,255,255,0.035) !important;
-    }
-
-    body:not(.theme-light) .textarea-main {
-      background: rgba(255,255,255,0.035) !important;
-    }
-
-    body:not(.theme-light) .detector-box,
-    body:not(.theme-light) .clippy-wrap,
-    body:not(.theme-light) .lang-bar {
-      background: rgba(255,255,255,0.03) !important;
-    }
-
-    body:not(.theme-light) .hist-item {
-      background: rgba(255,255,255,0.03) !important;
-    }
-
-    body:not(.theme-light) .stat-card {
-      background: rgba(255,255,255,0.03) !important;
-    }
-
-    body:not(.theme-light) #moodify-overlay {
-      background: rgba(3, 5, 7, 0.92) !important;
-    }
-  </style>
 </head>
 <body>
 
-<!-- FONDO GALAXY -->
+<!-- FONDO ATMOSFÉRICO — igual que login -->
 <canvas id="stars-canvas"></canvas>
 <div id="galaxy-bg">
-  <div class="galaxy-blob" id="gb1"></div>
-  <div class="galaxy-blob" id="gb2"></div>
-  <div class="galaxy-blob" id="gb3"></div>
-  <div class="galaxy-blob" id="gb4"></div>
+  <div class="galaxy-layer" id="gl-a"></div>
+  <div class="galaxy-layer" id="gl-b"></div>
 </div>
 
 <!-- OVERLAY DE CARGA -->
@@ -257,10 +66,8 @@
       <button class="cfg-close" onclick="closeConfig()">✕</button>
     </div>
 
-    <!-- Apariencia -->
     <div class="cfg-section">
       <div class="cfg-section-title">Apariencia</div>
-
       <div class="cfg-row">
         <div>
           <div class="cfg-row-label">Tema</div>
@@ -268,7 +75,6 @@
         </div>
         <div class="cfg-toggle" id="cfg-theme-toggle" onclick="toggleTheme()"></div>
       </div>
-
       <div class="cfg-row">
         <div>
           <div class="cfg-row-label">Idioma del agente</div>
@@ -281,10 +87,8 @@
       </div>
     </div>
 
-    <!-- Cuenta -->
     <div class="cfg-section">
       <div class="cfg-section-title">Cuenta</div>
-
       <div class="cfg-row">
         <div>
           <div class="cfg-row-label">Nombre de usuario</div>
@@ -292,7 +96,6 @@
         </div>
         <button class="cfg-btn-inline" onclick="startChangeUsername()">Cambiar</button>
       </div>
-
       <div class="cfg-row">
         <div>
           <div class="cfg-row-label">Correo electrónico</div>
@@ -300,7 +103,6 @@
         </div>
         <button class="cfg-btn-inline" onclick="startChangeEmail()">Cambiar</button>
       </div>
-
       <div class="cfg-row">
         <div>
           <div class="cfg-row-label">Contraseña</div>
@@ -312,7 +114,6 @@
 
     <div class="cfg-divider"></div>
 
-    <!-- Sesión -->
     <div class="cfg-section" style="margin-bottom:0;">
       <div class="cfg-section-title">Sesión</div>
       <button class="cfg-btn-full cfg-btn-logout" onclick="doLogout()">↩ Cerrar sesión</button>
@@ -325,11 +126,9 @@
 <div class="main-wrap app-panel active" id="panel-transformar">
 
   <div class="moodify-header">
+    <!-- TÍTULO SIMPLE Y ELEGANTE — las OO son los ojos -->
     <div class="moodify-titulo">
-      M<span class="eyes-inline">
-        <span class="eye-unit"><span class="brow"></span><span class="eye" id="eye1"></span></span>
-        <span class="eye-unit"><span class="brow"></span><span class="eye" id="eye2"></span></span>
-      </span>DIFY
+      M<span class="eyes-inline"><span class="eye-char">O</span><span class="eye-char">O</span></span>DIFY
     </div>
     <div class="moodify-sub"><span class="moodify-sub-accent">▸</span> REESCRITURA INTELIGENTE CON IA</div>
   </div>
@@ -369,7 +168,6 @@
 
       <div class="outputs-label">— VERSIONES ADAPTADAS</div>
 
-      <!-- Diplomático -->
       <div class="output-section">
         <div class="output-card card-dipl">
           <div class="output-header">
@@ -381,7 +179,6 @@
         </div>
       </div>
 
-      <!-- Ejecutivo -->
       <div class="output-section">
         <div class="output-card card-ejec">
           <div class="output-header">
@@ -393,7 +190,6 @@
         </div>
       </div>
 
-      <!-- Casual -->
       <div class="output-section">
         <div class="output-card card-casu">
           <div class="output-header">
@@ -432,44 +228,68 @@
   </div>
 </div>
 
-<!-- Scripts principales (ORDEN IMPORTANTE: app.js primero, luego historial.js) -->
 <script src="js/app.js"></script>
 <script src="js/historial.js"></script>
 
-<!-- Galaxy background + Theme toggle -->
 <script>
-/* ── EMOCIONES: colores más oscuros y relajados ── */
+/* ══════════════════════════════════════
+   FONDO ATMOSFÉRICO — mismo sistema que login
+   Gradientes sólidos, crossfade suave
+══════════════════════════════════════ */
 const EMOCIONES_BG = [
-  /* calma        */ { b1:'#082a18', b2:'#041830', b3:'#0a2808', b4:'#021018' },
-  /* frustración  */ { b1:'#2e0808', b2:'#1a0404', b3:'#240808', b4:'#100202' },
-  /* paz          */ { b1:'#050d30', b2:'#03071c', b3:'#040a20', b4:'#020512' },
-  /* urgencia     */ { b1:'#2a1a02', b2:'#180e01', b3:'#221402', b4:'#100802' },
-  /* melancolía   */ { b1:'#14072a', b2:'#0c041c', b3:'#0a051e', b4:'#07030e' },
-  /* positivismo  */ { b1:'#032418', b2:'#02180c', b3:'#041c12', b4:'#021008' },
+  /* calma        */
+  "radial-gradient(ellipse at 20% 55%, rgba(20,90,40,0.6) 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(10,60,80,0.45) 0%, transparent 48%), #04090a",
+  /* frustración  */
+  "radial-gradient(ellipse at 25% 50%, rgba(140,30,20,0.6) 0%, transparent 50%), radial-gradient(ellipse at 75% 25%, rgba(100,20,10,0.48) 0%, transparent 45%), #0d0605",
+  /* paz          */
+  "radial-gradient(ellipse at 15% 55%, rgba(20,60,140,0.55) 0%, transparent 52%), radial-gradient(ellipse at 80% 20%, rgba(10,40,100,0.48) 0%, transparent 45%), #060810",
+  /* urgencia     */
+  "radial-gradient(ellipse at 20% 50%, rgba(120,70,10,0.6) 0%, transparent 50%), radial-gradient(ellipse at 78% 22%, rgba(90,50,5,0.48) 0%, transparent 45%), #0d0a04",
+  /* melancolía   */
+  "radial-gradient(ellipse at 18% 55%, rgba(70,30,130,0.6) 0%, transparent 52%), radial-gradient(ellipse at 78% 22%, rgba(50,20,100,0.48) 0%, transparent 45%), #07050e",
+  /* positivismo  */
+  "radial-gradient(ellipse at 20% 55%, rgba(15,100,80,0.55) 0%, transparent 52%), radial-gradient(ellipse at 78% 22%, rgba(10,70,60,0.45) 0%, transparent 45%), #050d0b",
 ];
 
 const EMOCIONES_BG_LIGHT = [
-  /* calma        */ { b1:'#34c97a', b2:'#1aa0c8', b3:'#6adb50', b4:'#0090b0' },
-  /* frustración  */ { b1:'#f05050', b2:'#c02020', b3:'#e03838', b4:'#a01010' },
-  /* paz          */ { b1:'#4090e8', b2:'#2060c0', b3:'#60a8f0', b4:'#1840a0' },
-  /* urgencia     */ { b1:'#f0a020', b2:'#c07010', b3:'#e8b840', b4:'#a05808' },
-  /* melancolía   */ { b1:'#9060e0', b2:'#6030b8', b3:'#b080f8', b4:'#4820a0' },
-  /* positivismo  */ { b1:'#30c090', b2:'#10a060', b3:'#50d8a8', b4:'#088050' },
+  "radial-gradient(ellipse at 20% 55%, rgba(34,201,122,0.32) 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(26,160,200,0.28) 0%, transparent 48%), #f0f2ee",
+  "radial-gradient(ellipse at 25% 50%, rgba(240,80,80,0.3) 0%, transparent 50%), radial-gradient(ellipse at 75% 25%, rgba(192,32,32,0.25) 0%, transparent 45%), #f2eded",
+  "radial-gradient(ellipse at 15% 55%, rgba(64,144,232,0.3) 0%, transparent 52%), radial-gradient(ellipse at 80% 20%, rgba(32,96,192,0.25) 0%, transparent 45%), #edf0f5",
+  "radial-gradient(ellipse at 20% 50%, rgba(240,160,32,0.3) 0%, transparent 50%), radial-gradient(ellipse at 78% 22%, rgba(192,112,16,0.25) 0%, transparent 45%), #f5f0e8",
+  "radial-gradient(ellipse at 18% 55%, rgba(144,96,224,0.3) 0%, transparent 52%), radial-gradient(ellipse at 78% 22%, rgba(96,48,184,0.25) 0%, transparent 45%), #f0edf5",
+  "radial-gradient(ellipse at 20% 55%, rgba(48,192,144,0.3) 0%, transparent 52%), radial-gradient(ellipse at 78% 22%, rgba(16,160,96,0.25) 0%, transparent 45%), #ecf5f2",
 ];
 
-let curEmocion = 0;
+let curEmocion  = 0;
 let isLightTheme = false;
+let bgTransitioning = false;
 
-function applyBgColors(emo) {
-  const colors  = isLightTheme ? EMOCIONES_BG_LIGHT[emo] : EMOCIONES_BG[emo];
-  const opacity = isLightTheme ? 0.28 : 0.18;
-  ['gb1','gb2','gb3','gb4'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const keys = ['b1','b2','b3','b4'];
-    el.style.background = colors[keys[i]];
-    el.style.opacity = (opacity - i * 0.02).toFixed(2);
-  });
+const glA = document.getElementById('gl-a');
+const glB = document.getElementById('gl-b');
+
+function applyBgColors(idx) {
+  const bgs = isLightTheme ? EMOCIONES_BG_LIGHT : EMOCIONES_BG;
+  if (!glA || !glB || bgTransitioning) return;
+  bgTransitioning = true;
+  glA.style.background = bgs[curEmocion];
+  glA.style.opacity    = '1';
+  glB.style.background = bgs[idx];
+  glB.style.opacity    = '0';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    glA.style.transition = 'opacity 4s ease';
+    glB.style.transition = 'opacity 4s ease';
+    glA.style.opacity = '0';
+    glB.style.opacity = '1';
+    setTimeout(() => {
+      glA.style.background  = bgs[idx];
+      glA.style.opacity     = '1';
+      glA.style.transition  = 'none';
+      glB.style.opacity     = '0';
+      glB.style.transition  = 'none';
+      curEmocion = idx;
+      bgTransitioning = false;
+    }, 4200);
+  }));
 }
 
 /* ── STARS CANVAS ── */
@@ -484,55 +304,47 @@ function initStars() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
-
   function createStars() {
     stars = [];
-    const count = Math.floor((W * H) / 4500);
+    const count = Math.floor((W * H) / 5000);
     for (let i = 0; i < count; i++) {
       stars.push({
         x:     Math.random() * W,
         y:     Math.random() * H,
-        r:     Math.random() * 1.1 + 0.15,
-        alpha: Math.random() * 0.45 + 0.05,
+        r:     Math.random() * 1.0 + 0.1,
+        alpha: Math.random() * 0.35 + 0.04,
         speed: Math.random() * 0.003 + 0.001,
         phase: Math.random() * Math.PI * 2,
-        drift: (Math.random() - 0.5) * 0.03,
       });
     }
   }
-
   let frame = 0;
   function draw() {
     ctx.clearRect(0, 0, W, H);
     frame++;
-    const lightBoost = isLightTheme ? 0.5 : 1;
+    const lightBoost = isLightTheme ? 0.4 : 1;
     stars.forEach(s => {
-      const twinkle = Math.sin(s.phase + frame * s.speed) * 0.35 + 0.65;
-      const alpha = s.alpha * twinkle * lightBoost;
+      const twinkle = Math.sin(s.phase + frame * s.speed) * 0.3 + 0.7;
+      const alpha   = s.alpha * twinkle * lightBoost;
       ctx.beginPath();
-      ctx.arc(s.x + Math.sin(frame * s.drift * 0.01) * 0.3, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = isLightTheme ? `rgba(60,40,120,${alpha})` : `rgba(255,255,255,${alpha})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = isLightTheme
+        ? `rgba(60,40,120,${alpha})`
+        : `rgba(255,255,255,${alpha})`;
       ctx.fill();
-      if (s.r > 0.9) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = isLightTheme ? `rgba(80,60,160,${alpha*0.06})` : `rgba(255,255,255,${alpha*0.06})`;
-        ctx.fill();
-      }
     });
     requestAnimationFrame(draw);
   }
-
   resize();
   createStars();
   draw();
   window.addEventListener('resize', () => { resize(); createStars(); });
 }
 
-/* ── CICLO EMOCIONAL ── */
+/* ── CICLO EMOCIONAL — cada 7s ── */
 setInterval(() => {
-  curEmocion = (curEmocion + 1) % EMOCIONES_BG.length;
-  applyBgColors(curEmocion);
+  const next = (curEmocion + 1) % EMOCIONES_BG.length;
+  applyBgColors(next);
 }, 7000);
 
 /* ── TOGGLE TEMA ── */
@@ -546,14 +358,16 @@ function toggleTheme() {
   const themeSub = document.getElementById('cfg-theme-sub');
   if (themeSub) {
     const lang = (typeof currentLang !== 'undefined') ? currentLang : 'es';
-    if (lang === 'en') {
-      themeSub.textContent = isLightTheme ? 'Light mode active' : 'Dark mode active';
-    } else {
-      themeSub.textContent = isLightTheme ? 'Modo claro activo' : 'Modo oscuro activo';
-    }
+    themeSub.textContent = isLightTheme
+      ? (lang === 'en' ? 'Light mode active' : 'Modo claro activo')
+      : (lang === 'en' ? 'Dark mode active'  : 'Modo oscuro activo');
   }
 
-  applyBgColors(curEmocion);
+  // Re-aplicar fondo con los colores del tema correcto
+  const bgs = isLightTheme ? EMOCIONES_BG_LIGHT : EMOCIONES_BG;
+  if (glA) { glA.style.transition = 'none'; glA.style.background = bgs[curEmocion]; glA.style.opacity = '1'; }
+  if (glB) { glB.style.transition = 'none'; glB.style.opacity = '0'; }
+
   localStorage.setItem('moodify_theme', isLightTheme ? 'light' : 'dark');
 }
 
@@ -577,8 +391,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sel) sel.value = savedLang;
   }
 
+  // Aplicar fondo inicial
+  const bgs = isLightTheme ? EMOCIONES_BG_LIGHT : EMOCIONES_BG;
+  if (glA) { glA.style.background = bgs[0]; glA.style.opacity = '1'; }
+
   initStars();
-  applyBgColors(0);
 });
 </script>
 </body>
