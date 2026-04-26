@@ -9,7 +9,7 @@ Rutas:
   PUT    /api/perfil/username
   PUT    /api/perfil/email
   DELETE /api/cuenta
-  POST   /api/transform
+  POST   /api/transform          ← ahora con StreamingResponse
   POST   /api/translate
   GET    /api/historial
   GET    /api/favoritos
@@ -19,13 +19,14 @@ Rutas:
 
 import os
 import re
+import json
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 import auth as auth_module
@@ -84,6 +85,10 @@ def get_current_user(authorization: str = Header(None)):
     if not user:
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
     return user
+
+def sse_event(data: dict) -> str:
+    """Formatea un evento Server-Sent Events."""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 # ── Schemas ───────────────────────────────────────────────────
@@ -166,9 +171,8 @@ def reset_password(body: ResetRequest):
 
 @app.get("/api/perfil")
 def perfil(user=Depends(get_current_user)):
-    """Devuelve username y email del usuario autenticado."""
     try:
-        profile  = db.table("profiles").select("username, email").eq("id", user.id).execute()
+        profile = db.table("profiles").select("username, email").eq("id", user.id).execute()
         if profile.data:
             return {
                 "username": profile.data[0].get("username") or user.email.split("@")[0],
@@ -188,23 +192,17 @@ def perfil(user=Depends(get_current_user)):
 
 @app.put("/api/perfil/username")
 def cambiar_username(body: UsernameRequest, user=Depends(get_current_user)):
-    """Actualiza el username del usuario."""
     nuevo = body.username.strip().lower()
-
-    # Validaciones
     if len(nuevo) < 3:
         raise HTTPException(status_code=400, detail="❌ El username debe tener al menos 3 caracteres.")
     if len(nuevo) > 30:
         raise HTTPException(status_code=400, detail="❌ El username no puede superar 30 caracteres.")
     if not re.match(r'^[a-z0-9_]+$', nuevo):
         raise HTTPException(status_code=400, detail="❌ Solo letras, números y guion bajo (_).")
-
     try:
-        # Verificar si ya existe
         existing = db.table("profiles").select("id").eq("username", nuevo).execute()
         if existing.data and existing.data[0]["id"] != user.id:
             raise HTTPException(status_code=400, detail="❌ Ese nombre de usuario ya está en uso.")
-
         db.table("profiles").update({"username": nuevo}).eq("id", user.id).execute()
         return {"ok": True, "username": nuevo}
     except HTTPException:
@@ -216,13 +214,10 @@ def cambiar_username(body: UsernameRequest, user=Depends(get_current_user)):
 
 @app.put("/api/perfil/email")
 def cambiar_email(body: EmailRequest, user=Depends(get_current_user)):
-    """Actualiza el email del usuario (envía verificación)."""
     nuevo_email = body.email.strip().lower()
     if not re.match(r'^[^@]+@[^@]+\.[^@]+$', nuevo_email):
         raise HTTPException(status_code=400, detail="❌ Correo electrónico inválido.")
     try:
-        # Actualizar en Auth (Supabase enviará verificación automáticamente)
-        # Nota: esto requiere que el usuario esté autenticado con un token válido
         db.table("profiles").update({"email": nuevo_email}).eq("id", user.id).execute()
         return {"ok": True, "message": "Se ha enviado un enlace de verificación a tu nuevo correo."}
     except Exception as e:
@@ -234,33 +229,26 @@ def cambiar_email(body: EmailRequest, user=Depends(get_current_user)):
 
 @app.delete("/api/cuenta")
 def eliminar_cuenta(user=Depends(get_current_user)):
-    """Elimina completamente la cuenta del usuario."""
     try:
-        # 1. Eliminar historial
         try:
             db.table("historiales").delete().eq("user_id", user.id).execute()
         except Exception as e:
             print(f"[delete] Error borrando historial: {e}")
-
-        # 2. Eliminar perfil
         try:
             db.table("profiles").delete().eq("id", user.id).execute()
         except Exception as e:
             print(f"[delete] Error borrando perfil: {e}")
-
-        # 3. Eliminar usuario de Auth
         try:
             db.auth.admin.delete_user(user.id)
         except Exception as e:
             print(f"[delete] Error borrando usuario Auth: {e}")
-
         return {"ok": True, "message": "Cuenta eliminada correctamente."}
     except Exception as e:
         print(f"[delete] Error general: {e}")
         raise HTTPException(status_code=500, detail="❌ Error al eliminar la cuenta.")
 
 
-# ── Rutas: transform / translate ─────────────────────────────
+# ── Mock response ─────────────────────────────────────────────
 
 _MOCK_RESPONSE = {
     "diplomatico": "Le comento que el sistema ha presentado una falla técnica desde las 9am. Agradecería mucho su apoyo para escalar el incidente, ya que tenemos tres equipos sin poder operar.",
@@ -283,26 +271,83 @@ _MOCK_RESPONSE = {
 }
 
 
+# ── Ruta: transform con streaming ────────────────────────────
+
 @app.post("/api/transform")
-def transform(body: TransformRequest, user=Depends(get_current_user)):
+async def transform(body: TransformRequest, user=Depends(get_current_user)):
     mock_mode = os.getenv("MOCK_MODE", "false").lower() == "true"
-    if mock_mode or agent is None:
-        result = dict(_MOCK_RESPONSE)
-    else:
-        result = agent.procesar(body.mensaje)
 
-    guardar_historial(
-        user_id    = user.id,
-        mensaje    = body.mensaje,
-        dipl       = result["diplomatico"],
-        ejec       = result["ejecutivo"],
-        casu       = result["casual"],
-        tipo       = result.get("tipo", "general"),
-        tono       = result.get("tono", "neutro"),
-        intensidad = result.get("intensidad", "baja"),
+    async def event_stream():
+        import asyncio
+
+        if mock_mode or agent is None:
+            # ── MOCK: simula etapas con delays reales ──────────
+            etapas = [
+                (12,  "analizando",  "Analizando mensaje..."),
+                (25,  "idioma",      "Detectando idioma..."),
+                (38,  "preview",     "Generando vista previa..."),
+                (55,  "dipl",        "Generando tono diplomático..."),
+                (72,  "ejec",        "Generando tono ejecutivo..."),
+                (88,  "casu",        "Generando tono casual..."),
+                (96,  "guardando",   "Guardando en historial..."),
+            ]
+            for pct, stage, label in etapas:
+                yield sse_event({"type": "progress", "pct": pct, "stage": stage, "label": label})
+                await asyncio.sleep(0.18)
+
+            result = dict(_MOCK_RESPONSE)
+
+        else:
+            # ── MODELO REAL: etapas reales ─────────────────────
+            yield sse_event({"type": "progress", "pct": 10, "stage": "analizando", "label": "Analizando mensaje..."})
+            await asyncio.sleep(0)
+
+            yield sse_event({"type": "progress", "pct": 22, "stage": "idioma", "label": "Detectando idioma..."})
+            await asyncio.sleep(0)
+
+            yield sse_event({"type": "progress", "pct": 35, "stage": "preview", "label": "Generando vista previa..."})
+            await asyncio.sleep(0)
+
+            yield sse_event({"type": "progress", "pct": 42, "stage": "dipl", "label": "Generando tono diplomático..."})
+            await asyncio.sleep(0)
+
+            result = agent.procesar(body.mensaje)
+
+            yield sse_event({"type": "progress", "pct": 78, "stage": "ejec", "label": "Generando tono ejecutivo..."})
+            await asyncio.sleep(0)
+
+            yield sse_event({"type": "progress", "pct": 91, "stage": "casu", "label": "Generando tono casual..."})
+            await asyncio.sleep(0)
+
+            yield sse_event({"type": "progress", "pct": 96, "stage": "guardando", "label": "Guardando en historial..."})
+            await asyncio.sleep(0)
+
+        # Guardar historial
+        guardar_historial(
+            user_id    = user.id,
+            mensaje    = body.mensaje,
+            dipl       = result["diplomatico"],
+            ejec       = result["ejecutivo"],
+            casu       = result["casual"],
+            tipo       = result.get("tipo", "general"),
+            tono       = result.get("tono", "neutro"),
+            intensidad = result.get("intensidad", "baja"),
+        )
+
+        # Evento final con todos los datos
+        yield sse_event({"type": "done", "pct": 100, **result})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
     )
-    return result
 
+
+# ── Rutas: translate ──────────────────────────────────────────
 
 @app.post("/api/translate")
 def translate(body: TranslateRequest, user=Depends(get_current_user)):

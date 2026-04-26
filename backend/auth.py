@@ -12,7 +12,7 @@ SUPABASE_URL     = os.getenv("SUPABASE_URL")
 SUPABASE_KEY     = os.getenv("SUPABASE_ANON_KEY")
 SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE_KEY")
 JWT_SECRET       = os.getenv("SUPABASE_JWT_SECRET", "")
-MINIMO_STATS     = 10
+MINIMO_STATS     = 3
 
 # ── Clientes Supabase ─────────────────────────────────────────────
 supabase: Client = create_client(

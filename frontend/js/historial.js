@@ -1,6 +1,6 @@
 /* historial.js — Historial, favoritos y estadísticas */
 
-const MINIMO_STATS_H = 10;
+const MINIMO_STATS_H = 3;
 
 // ── Badges y helpers ──────────────────────────────────────────
 const BADGE_CLASSES = {

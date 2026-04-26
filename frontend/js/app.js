@@ -1,7 +1,7 @@
 /* app.js — Lógica principal de Moodify */
 
 const API = "http://localhost:8000";
-const MINIMO_STATS = 10;
+const MINIMO_STATS = 3;
 
 /* ── SISTEMA DE INTERNACIONALIZACIÓN ─────────────────────────── */
 const I18N = {
@@ -120,7 +120,6 @@ function t(key) {
 }
 
 function applyI18n() {
-  // Nav tabs
   document.querySelectorAll('.nav-tab[data-tab]').forEach(btn => {
     const keyMap = {
       'transformar':  'nav_transform',
@@ -132,27 +131,21 @@ function applyI18n() {
     if (key) btn.textContent = t(key);
   });
 
-  // Botón configuración
   const cfgBtn = document.querySelector('.btn-nav-config');
   if (cfgBtn) cfgBtn.textContent = t('nav_config');
 
-  // Botón transformar
   const btnTr = document.querySelector('.btn-transform');
   if (btnTr) btnTr.textContent = t('btn_transform');
 
-  // Botón traducir
   const btnTl = document.querySelector('.btn-translate');
   if (btnTl) btnTl.textContent = t('btn_translate');
 
-  // Lang label
   const langLbl = document.querySelector('.lang-label');
   if (langLbl) langLbl.textContent = t('lang_output');
 
-  // Outputs label
   const outLbl = document.querySelector('.outputs-label');
   if (outLbl) outLbl.textContent = t('outputs_label');
 
-  // Badges
   document.querySelectorAll('.output-card').forEach(card => {
     const badge = card.querySelector('.tone-badge');
     if (!badge) return;
@@ -161,7 +154,6 @@ function applyI18n() {
     else if (card.classList.contains('card-casu')) badge.textContent = t('badge_casu');
   });
 
-  // Placeholders outputs (solo si están vacíos / con placeholder)
   ['dipl','ejec','casu'].forEach(k => {
     const el = document.getElementById('out-' + k);
     if (!el) return;
@@ -169,28 +161,23 @@ function applyI18n() {
     if (ph) ph.textContent = t('placeholder_' + k);
   });
 
-  // Textarea placeholder
   const ta = document.getElementById('msg-input');
   if (ta) ta.placeholder = t('textarea_ph');
 
-  // Sub title
   const sub = document.querySelector('.moodify-sub');
   if (sub) sub.innerHTML = `<span class="moodify-sub-accent">▸</span> ${t('sub_title')}`;
 
-  // Detector label cuando está en estado neutral
   const detBox = document.getElementById('detector-box');
   if (detBox) {
     const neutral = detBox.querySelector('.det-neutral');
     if (neutral) neutral.textContent = t('detecting');
   }
 
-  // Clippy header
   const clippyH = document.querySelector('.clippy-header');
   if (clippyH) {
     clippyH.innerHTML = `<span class="clip-dot"></span> ${t('clippy_header')}`;
   }
 
-  // Section titles
   const secH = document.querySelector('#panel-historial .section-title');
   if (secH) secH.textContent = t('sec_historial');
   const secF = document.querySelector('#panel-favoritos .section-title');
@@ -198,32 +185,26 @@ function applyI18n() {
   const secE = document.querySelector('#panel-estadisticas .section-title');
   if (secE) secE.textContent = t('sec_estadisticas');
 
-  // Config modal
   const cfgTitle = document.querySelector('.cfg-title');
   if (cfgTitle) cfgTitle.textContent = t('cfg_title');
 
-  // Config section titles
   const cfgSections = document.querySelectorAll('.cfg-section-title');
   const sectionKeys = ['cfg_appearance', 'cfg_account', 'cfg_session'];
   cfgSections.forEach((el, i) => { if (sectionKeys[i]) el.textContent = t(sectionKeys[i]); });
 
-  // Config row labels
   const cfgRowLabels = document.querySelectorAll('.cfg-row-label');
   const rowKeys = ['cfg_theme_lbl', 'cfg_lang_lbl', 'cfg_username_lbl', 'cfg_email_lbl', 'cfg_pass_lbl'];
   cfgRowLabels.forEach((el, i) => { if (rowKeys[i]) el.textContent = t(rowKeys[i]); });
 
-  // Config lang sub
   const cfgLangSub = document.getElementById('cfg-lang-sub');
   if (cfgLangSub) cfgLangSub.textContent = t('cfg_lang_sub');
 
-  // Config theme sub
   const cfgThemeSub = document.getElementById('cfg-theme-sub');
   if (cfgThemeSub) {
     const isLight = document.body.classList.contains('theme-light');
     cfgThemeSub.textContent = isLight ? t('cfg_theme_light') : t('cfg_theme_dark');
   }
 
-  // Buttons
   const cfgLogout = document.querySelector('.cfg-btn-logout');
   if (cfgLogout) cfgLogout.textContent = t('cfg_logout');
   const cfgDelete = document.querySelector('.cfg-btn-danger');
@@ -233,7 +214,6 @@ function applyI18n() {
     el.textContent = t('cfg_change');
   });
 
-  // Re-render historial labels if visible
   if (typeof renderHistorialI18n === 'function') renderHistorialI18n();
 }
 
@@ -242,7 +222,6 @@ function setLang(lang) {
   sessionStorage.setItem('moodify_agent_lang', lang);
   applyI18n();
 
-  // Re-render panels if active
   const activePanel = document.querySelector('.app-panel.active');
   if (activePanel) {
     const tab = activePanel.id.replace('panel-', '');
@@ -253,20 +232,17 @@ function setLang(lang) {
 }
 
 /* ── Estado global ─────────────────────────────────────────── */
-let token    = sessionStorage.getItem('moodify_token')    || '';
-let username = sessionStorage.getItem('moodify_username') || '';
-let textos_es  = {};
-let idioma     = 'es';
-let loadTimer  = null;
+let token       = sessionStorage.getItem('moodify_token')    || '';
+let username    = sessionStorage.getItem('moodify_username') || '';
+let textos_es   = {};
+let idioma      = 'es';
 let loadRunning = false;
-let loadProg   = 0;
 
 /* ── Guard: redirige si no hay sesión ──────────────────────── */
 if (!token) { window.location.href = '/'; }
 
 /* ── Init ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  // Restaurar idioma
   const savedLang = sessionStorage.getItem('moodify_agent_lang');
   if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
     currentLang = savedLang;
@@ -389,47 +365,61 @@ function switchPanel(tab) {
   if (tab === 'estadisticas') loadEstadisticas();
 }
 
-/* ── Overlay de carga ───────────────────────────────────────── */
-const PHASES = [
-  [0,10,'ANALIZANDO'],[10,18,'DETECTANDO IDIOMA'],[18,22,'VISTA PREVIA'],
-  [22,45,'TONO DIPLOMÁTICO'],[45,68,'TONO EJECUTIVO'],[68,88,'TONO CASUAL'],[88,98,'FINALIZANDO']
-];
-function getPhase(p) {
-  for (const [a, b, l] of PHASES) if (p >= a && p < b) return l;
-  return 'LISTO ✓';
+/* ══════════════════════════════════════════════════════════════
+   OVERLAY DE CARGA — streaming real desde el backend
+══════════════════════════════════════════════════════════════ */
+
+const STAGE_LABELS_ES = {
+  analizando: 'Analizando mensaje...',
+  idioma:     'Detectando idioma...',
+  preview:    'Generando vista previa...',
+  dipl:       'Tono diplomático...',
+  ejec:       'Tono ejecutivo...',
+  casu:       'Tono casual...',
+  guardando:  'Guardando historial...',
+};
+const STAGE_LABELS_EN = {
+  analizando: 'Analyzing message...',
+  idioma:     'Detecting language...',
+  preview:    'Generating preview...',
+  dipl:       'Diplomatic tone...',
+  ejec:       'Executive tone...',
+  casu:       'Casual tone...',
+  guardando:  'Saving to history...',
+};
+
+function getStageLabel(stage, label) {
+  const map = currentLang === 'en' ? STAGE_LABELS_EN : STAGE_LABELS_ES;
+  return map[stage] || label || stage;
 }
-function setProgress(p) {
-  loadProg = p;
+
+function setProgress(p, stage, label) {
   const pd = document.getElementById('ov-prog');
   const dd = document.getElementById('ov-dot');
   const ph = document.getElementById('ov-phase');
   const pc = document.getElementById('ov-pct');
-  if (pd) pd.style.width  = p + '%';
-  if (dd) dd.style.left   = p + '%';
-  if (ph) ph.textContent  = getPhase(p);
-  if (pc) pc.textContent  = Math.round(p) + '%';
+  if (pd) pd.style.width = p + '%';
+  if (dd) dd.style.left  = p + '%';
+  if (ph) ph.textContent = label || stage || '';
+  if (pc) pc.textContent = Math.round(p) + '%';
 }
+
 function startLoading() {
   if (loadRunning) return;
-  loadRunning = true; loadProg = 0;
+  loadRunning = true;
   const ov = document.getElementById('moodify-overlay');
   if (ov) ov.classList.add('active');
-  setProgress(0); clearInterval(loadTimer);
-  loadTimer = setInterval(() => {
-    if (loadProg < 88) {
-      const step = loadProg < 22 ? 2.5 : loadProg < 68 ? 1.0 : 0.4;
-      setProgress(Math.min(88, loadProg + step));
-    }
-  }, 100);
+  setProgress(0, 'analizando', currentLang === 'en' ? 'Starting...' : 'Iniciando...');
 }
+
 function stopLoading() {
-  if (!loadRunning) return;
-  clearInterval(loadTimer); setProgress(100);
+  setProgress(100, 'done', currentLang === 'en' ? 'Done ✓' : 'Listo ✓');
   setTimeout(() => {
     const ov = document.getElementById('moodify-overlay');
     if (ov) ov.classList.remove('active');
-    loadRunning = false; setProgress(0);
-  }, 700);
+    loadRunning = false;
+    setProgress(0, '', '');
+  }, 600);
 }
 
 /* ── Detector de idioma (en vivo) ───────────────────────────── */
@@ -472,24 +462,67 @@ function onInputChange() {
   `;
 }
 
-/* ── Transformar ────────────────────────────────────────────── */
+/* ── Transformar — ahora con SSE streaming ──────────────────── */
 async function doTransform() {
   const msg = document.getElementById('msg-input').value.trim();
   if (!msg) return;
+  if (loadRunning) return;
+
   startLoading();
   setOutputPlaceholders();
+
   try {
-    const data = await apiPost('/api/transform', { mensaje: msg });
-    if (!data) return;
-    textos_es = data.textos_es || {};
-    renderOutputs(data);
-    renderDetector(data);
-    renderTips(data.tips || []);
-    selectLang('es');
-    checkStatsTab();
+    const res = await fetch(`${API}/api/transform`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ mensaje: msg }),
+    });
+
+    if (res.status === 401) { doLogout(); return; }
+    if (!res.ok) { stopLoading(); return; }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // guarda línea incompleta
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+
+          if (data.type === 'progress') {
+            const label = getStageLabel(data.stage, data.label);
+            setProgress(data.pct, data.stage, label);
+          }
+
+          if (data.type === 'done') {
+            textos_es = data.textos_es || {};
+            renderOutputs(data);
+            renderDetector(data);
+            renderTips(data.tips || []);
+            selectLang('es');
+            checkStatsTab();
+            stopLoading();
+          }
+
+        } catch (e) {
+          console.warn('SSE parse error:', e);
+        }
+      }
+    }
   } catch (e) {
-    console.error('Transform error:', e);
-  } finally {
+    console.error('Transform stream error:', e);
     stopLoading();
   }
 }
@@ -535,14 +568,173 @@ function renderDetector(data) {
   `;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   CLIPPY — mascota animada
+══════════════════════════════════════════════════════════════ */
+
+// Mapa emoción → expresión del personaje
+const CLIPPY_MOODS = {
+  '🔴': { eyes: 'angry',   color: '#ff6b5b', glow: 'rgba(255,107,91,0.4)' },
+  '🟡': { eyes: 'worried', color: '#ffb830', glow: 'rgba(255,184,48,0.4)' },
+  '⏰': { eyes: 'alert',   color: '#6ab4ff', glow: 'rgba(106,180,255,0.4)' },
+  '✅': { eyes: 'happy',   color: '#B8F000', glow: 'rgba(184,240,0,0.4)'  },
+  '💬': { eyes: 'neutral', color: '#b08aff', glow: 'rgba(176,138,255,0.4)' },
+  '💡': { eyes: 'happy',   color: '#40e0c0', glow: 'rgba(64,224,192,0.4)' },
+};
+
+function getClippyMoodFromTips(tips) {
+  if (!tips || !tips.length) return CLIPPY_MOODS['✅'];
+  const firstIcon = tips[0].icono;
+  return CLIPPY_MOODS[firstIcon] || CLIPPY_MOODS['✅'];
+}
+
+function renderClippyCharacter(mood) {
+  const { eyes, color, glow } = mood;
+
+  const eyeShapes = {
+    happy:   { l: 'M-5,-2 Q0,-7 5,-2',  r: 'M-5,-2 Q0,-7 5,-2',  pupils: false },
+    angry:   { l: 'M-5,-4 Q0,-1 5,-4',  r: 'M-5,-4 Q0,-1 5,-4',  pupils: true  },
+    worried: { l: 'M-5,-3 Q0,-6 5,-3',  r: 'M-5,-3 Q0,-6 5,-3',  pupils: true  },
+    alert:   { l: null, r: null, pupils: true, big: true },
+    neutral: { l: null, r: null, pupils: true },
+  };
+
+  const e = eyeShapes[eyes] || eyeShapes.neutral;
+
+  // Cejas
+  const browL = e.l ? `<path d="M ${-18},${-28} ${e.l.replace('M-5,-2','').replace('M-5,-4','').replace('M-5,-3','')} " stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round"/>` : '';
+
+  // Ojos SVG del personaje
+  let eyeSVG = '';
+  if (e.big) {
+    // Ojos grandes tipo "alerta"
+    eyeSVG = `
+      <ellipse cx="-14" cy="-8" rx="8" ry="9" fill="white" opacity="0.95"/>
+      <ellipse cx="14"  cy="-8" rx="8" ry="9" fill="white" opacity="0.95"/>
+      <circle  cx="-12" cy="-8" r="4" fill="#111" class="clippy-pupil-l"/>
+      <circle  cx="16"  cy="-8" r="4" fill="#111" class="clippy-pupil-r"/>
+      <circle  cx="-11" cy="-9" r="1.2" fill="white"/>
+      <circle  cx="17"  cy="-9" r="1.2" fill="white"/>
+    `;
+  } else if (e.pupils) {
+    eyeSVG = `
+      <ellipse cx="-14" cy="-8" rx="6.5" ry="7" fill="white" opacity="0.9"/>
+      <ellipse cx="14"  cy="-8" rx="6.5" ry="7" fill="white" opacity="0.9"/>
+      <circle  cx="-13" cy="-8" r="3.5" fill="#111" class="clippy-pupil-l"/>
+      <circle  cx="15"  cy="-8" r="3.5" fill="#111" class="clippy-pupil-r"/>
+      <circle  cx="-12" cy="-9" r="1" fill="white"/>
+      <circle  cx="16"  cy="-9" r="1" fill="white"/>
+    `;
+  } else {
+    // Ojos en arco (feliz/enojado)
+    eyeSVG = `
+      <path d="M-20,-8 Q-14,-15 -8,-8"  stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M8,-8   Q14,-15  20,-8"  stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    `;
+  }
+
+  // Cejas según mood
+  let browSVG = '';
+  if (eyes === 'angry') {
+    browSVG = `
+      <line x1="-20" y1="-22" x2="-8"  y2="-17" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8"   y1="-17" x2="20"  y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    `;
+  } else if (eyes === 'worried') {
+    browSVG = `
+      <line x1="-20" y1="-17" x2="-8"  y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8"   y1="-22" x2="20"  y2="-17" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    `;
+  } else if (eyes === 'alert') {
+    browSVG = `
+      <line x1="-20" y1="-22" x2="-8" y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8"   y1="-22" x2="20" y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    `;
+  } else if (eyes === 'happy') {
+    browSVG = `
+      <path d="M-20,-21 Q-14,-25 -8,-21" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M8,-21   Q14,-25  20,-21" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    `;
+  }
+
+  // Boca según mood
+  let mouthSVG = '';
+  if (eyes === 'happy') {
+    mouthSVG = `<path d="M-10,10 Q0,18 10,10" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  } else if (eyes === 'angry') {
+    mouthSVG = `<path d="M-10,14 Q0,8 10,14" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  } else if (eyes === 'worried') {
+    mouthSVG = `
+      <path d="M-8,12 Q0,16 8,12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <line x1="-4" y1="14" x2="-2" y2="16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="2"  y1="16" x2="4" y2="14"  stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    `;
+  } else if (eyes === 'alert') {
+    mouthSVG = `<ellipse cx="0" cy="13" rx="5" ry="4" fill="white" opacity="0.8"/>`;
+  } else {
+    mouthSVG = `<line x1="-8" y1="13" x2="8" y2="13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>`;
+  }
+
+  return `
+    <svg class="clippy-face" viewBox="-32 -36 64 70" xmlns="http://www.w3.org/2000/svg">
+      <!-- Cuerpo/cabeza -->
+      <ellipse cx="0" cy="0" rx="28" ry="30"
+        fill="${color}" opacity="0.15" filter="url(#clippy-blur)"/>
+      <ellipse cx="0" cy="0" rx="26" ry="28"
+        fill="#0a0d12" stroke="${color}" stroke-width="1.8"/>
+
+      <!-- Brillo superior -->
+      <ellipse cx="0" cy="-14" rx="14" ry="7"
+        fill="white" opacity="0.04"/>
+
+      <!-- Cejas -->
+      ${browSVG}
+
+      <!-- Ojos -->
+      ${eyeSVG}
+
+      <!-- Boca -->
+      ${mouthSVG}
+
+      <!-- Antenas -->
+      <line x1="-8"  y1="-28" x2="-12" y2="-36" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="8"   y1="-28" x2="12"  y2="-36" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="-12" cy="-36" r="2.5" fill="${color}"/>
+      <circle cx="12"  cy="-36" r="2.5" fill="${color}"/>
+
+      <defs>
+        <filter id="clippy-blur">
+          <feGaussianBlur stdDeviation="4"/>
+        </filter>
+      </defs>
+    </svg>
+  `;
+}
+
 function renderTips(tips) {
   const wrap  = document.getElementById('clippy-wrap');
   const items = document.getElementById('clippy-items');
+  const face  = document.getElementById('clippy-face-container');
   if (!wrap || !items) return;
-  if (!tips.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
-  items.innerHTML = tips.map(tip => `
-    <div class="clip-item">
+
+  if (!tips.length) {
+    wrap.classList.remove('clippy-visible');
+    setTimeout(() => { wrap.style.display = 'none'; }, 400);
+    return;
+  }
+
+  const mood = getClippyMoodFromTips(tips);
+
+  // Renderizar cara
+  if (face) {
+    face.innerHTML = renderClippyCharacter(mood);
+    face.style.setProperty('--clippy-glow', mood.glow);
+    face.style.setProperty('--clippy-color', mood.color);
+  }
+
+  // Renderizar tips
+  items.innerHTML = tips.map((tip, i) => `
+    <div class="clip-item" style="animation-delay:${i * 0.08}s">
       <span class="clip-icon">${tip.icono}</span>
       <div>
         <div class="clip-title">${escHtml(tip.titulo)}</div>
@@ -550,6 +742,26 @@ function renderTips(tips) {
       </div>
     </div>
   `).join('');
+
+  wrap.style.display = 'flex';
+  requestAnimationFrame(() => {
+    wrap.classList.add('clippy-visible');
+  });
+
+  // Animar parpadeo aleatorio de pupilas
+  startClippyBlink();
+}
+
+// Animación de parpadeo del personaje
+let clippyBlinkTimer = null;
+function startClippyBlink() {
+  if (clippyBlinkTimer) clearInterval(clippyBlinkTimer);
+  clippyBlinkTimer = setInterval(() => {
+    const face = document.querySelector('.clippy-face');
+    if (!face) { clearInterval(clippyBlinkTimer); return; }
+    face.classList.add('clippy-blink');
+    setTimeout(() => face.classList.remove('clippy-blink'), 180);
+  }, 2800 + Math.random() * 2000);
 }
 
 /* ── Seleccionar idioma de salida ───────────────────────────── */
@@ -751,3 +963,4 @@ function escHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
