@@ -394,13 +394,13 @@ function toggleTheme() {
   if (glA) { glA.style.transition = 'none'; glA.style.background = bg; glA.style.opacity = '1'; }
   if (glB) { glB.style.transition = 'none'; glB.style.opacity = '0'; }
 
-  localStorage.setItem('moodify_theme', isLightTheme ? 'light' : 'dark');
+  sessionStorage.setItem('moodify_theme', isLightTheme ? 'light' : 'dark');
 }
 
 /* ── INIT ── */
 document.addEventListener('DOMContentLoaded', () => {
   /* Restaurar tema */
-  const savedTheme = localStorage.getItem('moodify_theme');
+  const savedTheme = sessionStorage.getItem('moodify_theme');
   if (savedTheme === 'light') {
     isLightTheme = true;
     document.body.classList.add('theme-light');

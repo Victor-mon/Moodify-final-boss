@@ -175,8 +175,8 @@ async function doLogin() {
     document.getElementById('login-email').value = '';
     document.getElementById('login-pass').value  = '';
 
-    localStorage.setItem('moodify_token',    data.token);
-    localStorage.setItem('moodify_username', data.username);
+    sessionStorage.setItem('moodify_token',    data.token);
+    sessionStorage.setItem('moodify_username', data.username);
     showMsg('msg-login', 'Bienvenido. Cargando...', true);
 
     setTimeout(() => { window.location.href = '/app'; }, 400);

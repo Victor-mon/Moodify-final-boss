@@ -6,18 +6,18 @@ const MINIMO_STATS = 10;
 /* ── SISTEMA DE INTERNACIONALIZACIÓN ─────────────────────────── */
 const I18N = {
   es: {
-    nav_transform:    '✦ Transformar',
-    nav_historial:    '📋 Historial',
+    nav_transform:    'Transformar',
+    nav_historial:    'Historial',
     nav_favoritos:    '★ Favoritos',
-    nav_estadisticas: '📊 Estadísticas',
-    nav_config:       '⚙ Configuración',
-    btn_transform:    'Transformar ✦',
+    nav_estadisticas: 'Estadísticas',
+    nav_config:       'Configuración',
+    btn_transform:    'Transformar',
     btn_translate:    'Traducir ✦',
     lang_output:      '🌐 Salida en',
     outputs_label:    '— VERSIONES ADAPTADAS',
-    badge_dipl:       '🤝 Diplomático',
-    badge_ejec:       '💼 Ejecutivo',
-    badge_casu:       '😊 Casual',
+    badge_dipl:       'Diplomático',
+    badge_ejec:       'Ejecutivo',
+    badge_casu:       'Casual',
     placeholder_dipl: 'La versión diplomática aparecerá aquí...',
     placeholder_ejec: 'La versión ejecutiva aparecerá aquí...',
     placeholder_casu: 'La versión casual aparecerá aquí...',
@@ -54,23 +54,23 @@ const I18N = {
     cfg_delete:       '✕ Eliminar cuenta',
     preview_en:       '🇺🇸 Vista previa en inglés',
     preview_es:       '🇲🇽 Vista previa en español',
-    dipl_label:       '🤝 Diplomático',
-    ejec_label:       '💼 Ejecutivo',
-    casu_label:       '😊 Casual',
+    dipl_label:       'Diplomático',
+    ejec_label:       'Ejecutivo',
+    casu_label:       'Casual',
   },
   en: {
-    nav_transform:    '✦ Transform',
-    nav_historial:    '📋 History',
-    nav_favoritos:    '★ Favorites',
-    nav_estadisticas: '📊 Statistics',
-    nav_config:       '⚙ Settings',
-    btn_transform:    'Transform ✦',
+    nav_transform:    'Transform',
+    nav_historial:    'History',
+    nav_favoritos:    'Favorites',
+    nav_estadisticas: 'Statistics',
+    nav_config:       'Settings',
+    btn_transform:    'Transform',
     btn_translate:    'Translate ✦',
     lang_output:      '🌐 Output in',
     outputs_label:    '— ADAPTED VERSIONS',
-    badge_dipl:       '🤝 Diplomatic',
-    badge_ejec:       '💼 Executive',
-    badge_casu:       '😊 Casual',
+    badge_dipl:       'Diplomatic',
+    badge_ejec:       'Executive',
+    badge_casu:       'Casual',
     placeholder_dipl: 'The diplomatic version will appear here...',
     placeholder_ejec: 'The executive version will appear here...',
     placeholder_casu: 'The casual version will appear here...',
@@ -107,13 +107,13 @@ const I18N = {
     cfg_delete:       '✕ Delete account',
     preview_en:       '🇺🇸 English preview',
     preview_es:       '🇲🇽 Spanish preview',
-    dipl_label:       '🤝 Diplomatic',
-    ejec_label:       '💼 Executive',
-    casu_label:       '😊 Casual',
+    dipl_label:       'Diplomatic',
+    ejec_label:       'Executive',
+    casu_label:       'Casual',
   }
 };
 
-let currentLang = localStorage.getItem('moodify_agent_lang') || 'es';
+let currentLang = sessionStorage.getItem('moodify_agent_lang') || 'es';
 
 function t(key) {
   return (I18N[currentLang] || I18N['es'])[key] || key;
@@ -239,7 +239,7 @@ function applyI18n() {
 
 function setLang(lang) {
   currentLang = lang;
-  localStorage.setItem('moodify_agent_lang', lang);
+  sessionStorage.setItem('moodify_agent_lang', lang);
   applyI18n();
 
   // Re-render panels if active
@@ -253,8 +253,8 @@ function setLang(lang) {
 }
 
 /* ── Estado global ─────────────────────────────────────────── */
-let token      = localStorage.getItem('moodify_token')    || '';
-let username   = localStorage.getItem('moodify_username') || '';
+let token    = sessionStorage.getItem('moodify_token')    || '';
+let username = sessionStorage.getItem('moodify_username') || '';
 let textos_es  = {};
 let idioma     = 'es';
 let loadTimer  = null;
@@ -267,7 +267,7 @@ if (!token) { window.location.href = '/'; }
 /* ── Init ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   // Restaurar idioma
-  const savedLang = localStorage.getItem('moodify_agent_lang');
+  const savedLang = sessionStorage.getItem('moodify_agent_lang');
   if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
     currentLang = savedLang;
     const sel = document.getElementById('cfg-lang-select');
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     apiGet('/api/perfil').then(data => {
       if (data && data.username) {
         username = data.username;
-        localStorage.setItem('moodify_username', username);
+        sessionStorage.setItem('moodify_username', username);
         const navU = document.getElementById('nav-username');
         if (navU) navU.textContent = `@${username}`;
       }
@@ -369,8 +369,8 @@ async function apiPut(endpoint, body) {
 
 /* ── Logout ─────────────────────────────────────────────────── */
 function doLogout() {
-  localStorage.removeItem('moodify_token');
-  localStorage.removeItem('moodify_username');
+  sessionStorage.removeItem('moodify_token');
+  sessionStorage.removeItem('moodify_username');
   window.location.href = '/';
 }
 
@@ -601,7 +601,7 @@ function openConfig() {
   const overlay = document.getElementById('cfg-overlay');
   if (overlay) overlay.classList.add('open');
 
-  const uname = localStorage.getItem('moodify_username') || username || 'usuario';
+  const uname = sessionStorage.getItem('moodify_username') || username || 'usuario';
   const unameDisplay = document.getElementById('cfg-username-display');
   if (unameDisplay) unameDisplay.textContent = '@' + uname;
 
@@ -647,7 +647,7 @@ async function startChangeUsername() {
       return;
     }
     username = newU.trim();
-    localStorage.setItem('moodify_username', username);
+    sessionStorage.setItem('moodify_username', username);
     const navU = document.getElementById('nav-username');
     if (navU) navU.textContent = '@' + username;
     const cfgU = document.getElementById('cfg-username-display');
