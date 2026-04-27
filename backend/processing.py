@@ -179,7 +179,6 @@ class IntentExtractor:
             "saludo_apertura": saludo_m.group("saludo").strip() if saludo_m else None,
             "nombre_saludo":   saludo_m.group("nombre").strip() if (saludo_m and saludo_m.group("nombre")) else None,
             "nombre_destinatario": (lambda m: m.group(1) if m else None)(self._NOMBRE_CUERPO.search(mensaje)),
-
         }
 
     def construir_ancla(self, intento):
@@ -203,14 +202,71 @@ class RoleMatrix:
     _SC_PLURAL_REC  = [(r'\b(ustedes|todos|tod[ao]s)\b', 14), (r'\b(les\b)', 9), (r'\b(equipo|compañer[oa]s|colegas|personal)\b', 9), (r'\b(pueden|tienen|deben|hagan|revisen)\b', 8)]
     _SC_SING_FORMAL = [(r'\busted\b', 16), (r'\bsu\s+(?:apoyo|respuesta|atención)\b', 8), (r'\b(estimad[ao]|le\s+(?:comento|informo|solicito))\b', 10)]
     _SC_SING_INF    = [(r'\btú\b', 14), (r'\bte\b', 7), (r'\btu\b', 6), (r'\b(puedes|tienes|debes|podrías)\b', 9), (r'\b(bro|papu|jefa?|wey|mano|compa)\b', 7)]
-    _TIPO_PATS = [
-        ("pregunta",   re.compile(r'\?|¿', re.I)),
-        ("queja",      re.compile(r'\b(harto|frustrad|cansad|no\s+puede\s+ser|molest)\b', re.I)),
-        ("solicitud",  re.compile(r'\b(quisiera|solicito|pido|permiso|podría[s]?|me\s+gustaría|vacaciones|necesito\s+que)\b', re.I)),
-        ("comunicado", re.compile(r'\b(informamos|comunicamos|avisamos|notificamos)\b', re.I)),
-        ("reporte",    re.compile(r'\b(el\s+cliente|el\s+sistema|no\s+ha\s+llegado|lleva.{1,20}sin)\b', re.I)),
-        ("aviso",      re.compile(r'\b(importante|recordar|avisar|tomar\s+en\s+cuenta|es\s+necesario\s+que)\b', re.I)),
-    ]
+
+    # ── Patrones de tipo — ordenados por especificidad (más específico primero) ──
+    # Cada patrón tiene: (nombre, compilado, score_mínimo_para_activar)
+    # Se acumulan scores y gana el de mayor score, NO el primero en matchear.
+
+    _TIPO_SCORES = {
+        # QUEJA: frustración explícita, algo salió mal, error de otro
+        "queja": re.compile(
+            r'\b(harto|frustrad[ao]|cansad[ao]|no\s+puede\s+ser|molest[ao]|'
+            r'sigue\s+sin|lleva[s]?\s+(?:días?|semanas?|horas?)\s+sin|'
+            r'ya\s+(?:van|llevan|lleva)\s+\d|por\s+qué\s+no|'
+            r'no\s+(?:funciona|sirve|responde|han|hay)|caído|caída|'
+            r'error|falla|problema|bug|bloqueado|trabado|'
+            r'incumplimiento|incumplió|tardaron|no\s+llegó|'
+            r'pésimo|terrible|inaceptable|inadmisible)\b', re.I),
+
+        # SOLICITUD: pedir algo, permiso, recurso, acción de otro
+        "solicitud": re.compile(
+            r'\b(quisiera|solicito|pido|permiso|podría[s]?|me\s+gustaría|'
+            r'vacaciones|incapacidad|día\s+(?:libre|económico)|'
+            r'necesito\s+que|requier[eo]|requiero|'
+            r'favor\s+de|les?\s+pido|les?\s+solicito|'
+            r'podrían\s+(?:apoyar|ayudar|enviar|compartir|revisar|confirmar)|'
+            r'sería\s+posible|es\s+posible\s+que|'
+            r'agradecería|me\s+podrías?|te\s+pido|'
+            r'autorización|aprobación|validación|apoyo)\b', re.I),
+
+        # COMUNICADO: informar a muchos, anuncio oficial, circular
+        "comunicado": re.compile(
+            r'\b(informamos|comunicamos|avisamos|notificamos|hacemos\s+(?:saber|del\s+conocimiento)|'
+            r'hacemos\s+de\s+su\s+conocimiento|por\s+medio\s+del\s+presente|'
+            r'nos\s+(?:complace|es\s+grato)|se\s+les\s+(?:informa|comunica|notifica)|'
+            r'a\s+todo[s]?\s+el\s+(?:equipo|personal)|circular|boletín|'
+            r'se\s+informa\s+(?:que|a)|para\s+conocimiento\s+general)\b', re.I),
+
+        # REPORTE: informar estado/avance de algo en curso, sin pedir acción
+        "reporte": re.compile(
+            r'\b(el\s+(?:cliente|sistema|servidor|proyecto|proceso|equipo)\s+(?:no\s+ha|está|tiene|presentó)|'
+            r'(?:lleva[s]?|llevamos)\s+\d+\s+(?:días?|horas?|semanas?)|'
+            r'se\s+(?:completó|terminó|finalizó|entregó|realizó|detectó)|'
+            r'avance|avances|actualización\s+de|status\s+de|estatus\s+de|'
+            r'reporte\s+(?:de|del)|comparto\s+(?:el\s+)?(?:avance|reporte|estatus)|'
+            r'al\s+(?:momento|día\s+de\s+hoy)|a\s+la\s+fecha|'
+            r'informo\s+que|les?\s+(?:comento|comparto)\s+que)\b', re.I),
+
+        # AVISO: recordatorio, alerta, cambio importante sin ser circular formal
+        "aviso": re.compile(
+            r'\b(importante|recordar(?:les?)?|favor\s+de\s+tomar|tomar\s+en\s+cuenta|'
+            r'es\s+necesario\s+que|les?\s+(?:recuerdo|recuerda)|'
+            r'atención[,:]|ojo\s*[,:]|aviso\s+(?:importante|urgente)|'
+            r'les?\s+(?:recomienda|sugiere|solicita)\s+(?:que\s+)?(?:estén|tengan|'
+            r'guarden|conserven|actualicen|revisen)|'
+            r'queda\s+(?:pendiente|cancelado|pospuesto|suspendido)|'
+            r'cambio\s+de|nueva\s+(?:fecha|hora|sede|política))\b', re.I),
+
+        # PREGUNTA: duda pura, sin intención de solicitar acción de otro
+        "pregunta": re.compile(
+            r'\b((?:alguien\s+)?sabe\s+(?:si|cuándo|cómo|dónde|qué)|'
+            r'(?:me\s+)?podrías?\s+(?:decir|explicar|aclarar|confirmar)|'
+            r'hay\s+alguna?\s+(?:forma|manera|opción|posibilidad)|'
+            r'cuál\s+es\s+el\s+(?:proceso|procedimiento|contacto|correo)|'
+            r'(?:es|son)\s+(?:correctos?|válidos?|adecuados?)\s+los?|'
+            r'qué\s+(?:pasó|pasará|significa|debo|debería))\b', re.I),
+    }
+
     _TONO_PATS = {
         "frustracion": re.compile(r'\b(harto|frustrad|cansad|ya\s+no|nunca|siempre|pinche|ch[i]ng[ao]|p[u]ta|no\s+manch[e]s|increíble|colmo|ridículo|asco)\b', re.I),
         "urgencia":    re.compile(r'\b(urgente|ahorita|ya|ahora|inmediato|cuanto\s+antes|hoy\s+mismo|pronto)\b', re.I),
@@ -218,16 +274,21 @@ class RoleMatrix:
     }
 
     _CC_IMPL = re.compile(
-    r'\b(a\s+todos|el\s+equipo|les\s+comunico|para\s+conocimiento|'
-    r'fyi\b|para\s+que\s+estén\s+al\s+tanto|quiero\s+que\s+sepan)\b',
-    re.IGNORECASE)
+        r'\b(a\s+todos|el\s+equipo|les\s+comunico|para\s+conocimiento|'
+        r'fyi\b|para\s+que\s+estén\s+al\s+tanto|quiero\s+que\s+sepan)\b',
+        re.IGNORECASE)
 
     def analizar(self, mensaje, pre):
         m  = mensaje.strip()
         ml = m.lower()
+
+        # ── Emisor ──────────────────────────────────────────────────────────
         sc_nos = sum(p for pat, p in self._SC_PLURAL_EMI  if re.search(pat, ml))
         sc_yo  = sum(p for pat, p in self._SC_YO          if re.search(pat, ml)) + (3 if pre["tiene_slang"] else 0)
-        emisor = "nosotros" if (sc_nos >= 8 and sc_nos > sc_yo * 1.25) else ("yo" if sc_yo >= 5 else ("nosotros" if sc_nos >= 8 else "indeterminado"))
+        emisor = "nosotros" if (sc_nos >= 8 and sc_nos > sc_yo * 1.25) else \
+                 ("yo" if sc_yo >= 5 else ("nosotros" if sc_nos >= 8 else "indeterminado"))
+
+        # ── Receptor ────────────────────────────────────────────────────────
         sc_pl   = sum(p for pat, p in self._SC_PLURAL_REC  if re.search(pat, ml))
         sc_sgfo = sum(p for pat, p in self._SC_SING_FORMAL if re.search(pat, ml))
         sc_sgin = sum(p for pat, p in self._SC_SING_INF    if re.search(pat, ml))
@@ -235,18 +296,44 @@ class RoleMatrix:
         receptor = "plural" if (sc_pl > sc_sg and sc_pl >= 5) else \
                    ("singular_formal" if (sc_sg > sc_pl and sc_sg >= 4 and sc_sgfo > sc_sgin) else \
                    ("singular_informal" if (sc_sg > sc_pl and sc_sg >= 4) else "indeterminado"))
-        tipo = "general"
-        for t, pat in self._TIPO_PATS:
-            if pat.search(m):
-                tipo = t
-                break
-        if emisor == "nosotros" and re.search(r'\b(informamos|comunicamos|avisamos)\b', ml): tipo = "comunicado"
-        elif emisor == "yo" and re.search(r'\b(solicito|pido|quisiera|permiso|vacaciones)\b', ml):  tipo = "solicitud"
+
+        # ── Tipo — sistema de puntaje acumulado ──────────────────────────────
+        # Cada tipo suma matches ponderados; gana el de mayor score.
+        # Pesos: queja=3, solicitud=3, comunicado=4, reporte=3, aviso=2, pregunta=1
+        PESOS = {"queja": 3, "solicitud": 3, "comunicado": 4, "reporte": 3, "aviso": 2, "pregunta": 1}
+        tipo_scores = {}
+        for nombre, pat in self._TIPO_SCORES.items():
+            hits = len(pat.findall(m))
+            if hits > 0:
+                tipo_scores[nombre] = hits * PESOS[nombre]
+
+        # Reglas de prioridad hard-coded que anulan el score:
+        # 1. Emisor grupal + verbo de comunicación → siempre comunicado
+        if emisor == "nosotros" and re.search(r'\b(informamos|comunicamos|avisamos|notificamos)\b', ml):
+            tipo = "comunicado"
+        # 2. Tiene queja y solicitud a la vez → queja gana (es más específico)
+        elif tipo_scores.get("queja", 0) >= 3 and tipo_scores.get("solicitud", 0) >= 3:
+            tipo = "queja"
+        # 3. Mayor score gana, con mínimo de 2 puntos para no ser "general"
+        elif tipo_scores and max(tipo_scores.values()) >= 2:
+            tipo = max(tipo_scores, key=tipo_scores.get)
+        # 4. Tiene ? pero sin señales de solicitud/queja/reporte → pregunta
+        elif pre.get("es_pregunta") and not tipo_scores:
+            tipo = "pregunta"
+        else:
+            tipo = "general"
+
+        # ── Tono emocional ───────────────────────────────────────────────────
         scores = {k: len(v.findall(m)) for k, v in self._TONO_PATS.items()}
         scores["frustracion"] += 2 if pre["tiene_groserías"] else 0
-        tono_em   = "frustracion" if scores["frustracion"] >= 1 else ("urgencia" if scores["urgencia"] >= 2 else ("positivo" if scores["positivo"] >= 2 else "neutro"))
-        intensidad = "alta" if (scores["frustracion"] >= 2 or pre["tiene_groserías"]) else ("media" if scores["frustracion"] == 1 else "baja")
+        tono_em   = "frustracion" if scores["frustracion"] >= 1 else \
+                    ("urgencia" if scores["urgencia"] >= 2 else \
+                    ("positivo" if scores["positivo"] >= 2 else "neutro"))
+        intensidad = "alta" if (scores["frustracion"] >= 2 or pre["tiene_groserías"]) else \
+                     ("media" if scores["frustracion"] == 1 else "baja")
+
         _EMJ = re.compile("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001FA00-\U0001FAFF]+", re.UNICODE)
+
         return {
             "emisor":             emisor,
             "receptor":           receptor,
@@ -282,6 +369,10 @@ class OutputCleaner:
     _RELLENO   = re.compile(r'\s*[,.]?\s*(?:¿(?:verdad|no|órale|sí|entendido|correcto|de\s+acuerdo|vamos\s+bien)\?|,\s*¿(?:sí|no|verdad|órale)\?)', re.IGNORECASE)
     _PALABRAS_EN = {'okay','sorry','check','feedback','update','meeting','call','team','deadline','cool','awesome','sure','thanks','bye','hello','please','wait','stop','done','nice','great','bad','let','make','take','give','need','want','know','think','see','come','look','try','keep','use','send','bro','dude','guys','man','just','then','well','now','here','there','this','that','with','and','the','for','are','but','not','what','all','were','when','your','can','which','their','will','other','about','many','them','these','some','her','would','him','into','has','two'}
 
+    # Limpia bullets/listas que el modelo a veces genera en ejecutivo
+    _BULLETS = re.compile(r'^\s*[-•*·▶►]\s+', re.MULTILINE)
+    _NUMLIST  = re.compile(r'^\s*\d+[.)]\s+', re.MULTILINE)
+
     def limpiar(self, texto, tono, tiene_emojis_orig):
         if not texto:
             return ""
@@ -289,11 +380,20 @@ class OutputCleaner:
         texto = self._SUFIJOS.sub("",  texto).strip()
         texto = self._ETIQUETAS.sub("", texto).strip()
         texto = self._NO_LATINO.sub("", texto).strip()
+
+        # Para ejecutivo: eliminar bullets y listas numeradas —
+        # el tono ejecutivo debe ser prosa densa, no puntos
+        if tono == "ejecutivo":
+            texto = self._BULLETS.sub("", texto)
+            texto = self._NUMLIST.sub("", texto)
+            texto = re.sub(r'\n+', ' ', texto).strip()  # colapsar saltos en prosa
+
         parrafos = [p.strip() for p in re.split(r'\n{2,}', texto) if p.strip()]
         if len(parrafos) >= 2 and any(parrafos[1].lower().startswith(k) for k in ["otra versión", "versión alternativa", "también puedes", "o bien", "alternativamente"]):
             texto = parrafos[0]
         else:
             texto = "\n\n".join(parrafos)
+
         if tono in ("diplomatico", "ejecutivo"):
             texto = self._EMOJIS.sub("", texto).strip()
             texto = re.sub(r'\s{2,}', ' ', texto)
@@ -306,6 +406,7 @@ class OutputCleaner:
             texto = ' '.join(palabras).strip()
             if len(texto.split()) < 2:
                 return ""
+
         texto = re.sub(r' {2,}', ' ', texto)
         texto = re.sub(r'\n{3,}', '\n\n', texto)
         if texto and not texto[0].isupper():
@@ -331,14 +432,18 @@ class PromptBuilder:
         n_datos      = len(intento["numeros"]) + len(intento["fechas"]) + len(intento["montos"]) + len(intento["objetos"])
         reg_rec    = ctx.get("registro_receptor", "informal")
 
+        min_w = max(4, int(palabras * 0.80))
+        max_w = max(15, int(palabras * (1.4 if lon_clase in ("muy_corto", "corto") else 2.2)))
+
         estrategia = "ESTRATEGIA — MENSAJE MUY CORTO:\nCambia el tono únicamente. Misma brevedad." if lon_clase == "muy_corto" else \
                      ("ESTRATEGIA — MENSAJE CORTO:\nMantén la respuesta breve." if lon_clase == "corto" else \
                       "ESTRATEGIA — PRESERVACIÓN COMPLETA:\nConserva TODO el contenido. Cada dato, fecha, acción y razón DEBE aparecer en la versión reescrita.")
+
         densidad_nota = ""
         if n_datos >= 3:
-                densidad_nota = f"\nMensaje con ALTA densidad de datos ({n_datos} elementos clave) — permite hasta {max_w} palabras para no perder información.\n"
+            densidad_nota = f"\nMensaje con ALTA densidad de datos ({n_datos} elementos clave) — permite hasta {max_w} palabras para no perder información.\n"
         elif lon_clase in ("muy_corto", "corto") and n_datos == 0:
-                densidad_nota = "\nMensaje simple y corto — respuesta igualmente breve.\n"
+            densidad_nota = "\nMensaje simple y corto — respuesta igualmente breve.\n"
 
         pregunta_nota  = "\nADVERTENCIA: El mensaje original es una PREGUNTA — la versión reescrita también debe serlo.\n" if es_pregunta else ""
         broadcast_nota = "\nMensaje BROADCAST (para equipo completo) — tono más formal e inclusivo.\n" if es_broadcast else ""
@@ -353,13 +458,12 @@ class PromptBuilder:
             "comunicado": "COMUNICADO — mantén emisor grupal.",
             "reporte":    "REPORTE — no lo conviertas en directiva.",
             "aviso":      "AVISO — conserva el objetivo de notificación.",
-            "general":    "Conserva el tipo del mensaje original.",
+            "general":    "Conserva el tipo y propósito del mensaje original.",
         }.get(tipo, "Conserva el tipo y propósito.")
-        min_w = max(4, int(palabras * 0.80))
-        max_w = max(15, int(palabras * (1.4 if lon_clase in ("muy_corto", "corto") else 2.2)))
+
         nl = "\n"
         slang_bloque = (f"{'─'*30}{nl}{slang_instr}") if slang_instr else ""
-    
+
         return (
             f"Eres un experto en comunicación profesional en México.{nl}{nl}"
             f"TAREA: Cambiar ÚNICAMENTE el tono. El contenido NO cambia.{nl}{nl}"
@@ -389,7 +493,6 @@ class PromptBuilder:
             f"Escribe ÚNICAMENTE el mensaje reescrito. Sin comillas. Sin prefijos. Sin explicaciones."
         )
 
-        
     def _perspectiva(self, emisor, receptor, reg_rec):
         lineas = ["PERSPECTIVA GRAMATICAL:"]
         if emisor == "yo":
@@ -411,14 +514,45 @@ class PromptBuilder:
     def _tono_principios(self, tono, tono_em, intensidad, lon_clase, tipo):
         em_nota = ""
         if tono_em == "frustracion" and intensidad in ("media", "alta"):
-            em_nota = {"diplomatico": "\nFrustración → firmeza respetuosa.", "ejecutivo": "\nFrustración → hecho + impacto + acción. Sin emociones.", "casual": "\nFrustración real → refléjala directamente."}.get(tono, "")
+            em_nota = {
+                "diplomatico": "\nFrustración → firmeza respetuosa. Reconoce el impacto sin atacar.",
+                "ejecutivo":   "\nFrustración → hecho + impacto + acción requerida. Sin emociones. Sin calificativos.",
+                "casual":      "\nFrustración real → refléjala con naturalidad, sin exagerar.",
+            }.get(tono, "")
         elif tono_em == "urgencia":
-            em_nota = "\nUrgencia → transmítela en el registro del tono."
-        long_nota = "\nMensaje corto → respuesta igualmente corta." if lon_clase in ("muy_corto", "corto") else ""
+            em_nota = "\nUrgencia → transmítela en el registro del tono. La primera oración debe dejar claro el plazo o la necesidad."
+
+        long_nota = "\nMensaje corto → respuesta igualmente corta. NO añadas texto de relleno." if lon_clase in ("muy_corto", "corto") else ""
+
         if tono == "diplomatico":
-            base = "TONO DIPLOMÁTICO — identidad: RELACIÓN PRIMERO\n· Reconoce el contexto humano mientras expone el asunto.\n· Construcciones clave: 'Agradecería', 'Sería de gran apoyo'\n· Suaviza sin perder firmeza.\nPROHIBIDO: viñetas, frases burocráticas, placeholders."
+            base = (
+                "TONO DIPLOMÁTICO — identidad: RELACIÓN PRIMERO\n"
+                "· Abre reconociendo el contexto o la relación antes de exponer el problema.\n"
+                "· Construcciones clave: 'Agradecería mucho su apoyo', 'Sería de gran utilidad', 'Quedo a sus órdenes'.\n"
+                "· Suaviza la urgencia o molestia sin perder firmeza ni el punto central.\n"
+                "· Cierra con disponibilidad o próximo paso amable.\n"
+                "PROHIBIDO: viñetas, frases burocráticas vacías, placeholders como [nombre]."
+            )
         elif tono == "ejecutivo":
-            base = "TONO EJECUTIVO — identidad: RESULTADO PRIMERO\n1. HECHO: primera oración = dato más importante.\n2. IMPACTO: consecuencia.\n3. ACCIÓN: qué se necesita hacer.\n· Voz activa. Frases cortas.\nPROHIBIDO: 'Agradecería', cierres suaves, relleno."
-        else:
-            base = "TONO CASUAL LABORAL — identidad: PERSONA REAL EN EL TRABAJO\n· Compañero de confianza mexicano. Directo y auténtico.\n· Conectores: porque, así que, por eso.\n· Español de México. Sin inglés."
+            base = (
+                "TONO EJECUTIVO — identidad: DATO → IMPACTO → ACCIÓN\n"
+                "· ESTRUCTURA OBLIGATORIA en una sola cadena de prosa (NO bullets, NO lista, NO números):\n"
+                "  1. DATO (primera oración): el hecho más importante, con cifras/fechas si existen.\n"
+                "  2. IMPACTO (segunda oración): consecuencia directa del dato.\n"
+                "  3. ACCIÓN (tercera oración): qué se necesita, quién lo hace, para cuándo.\n"
+                "· Voz activa. Frases cortas y directas. Sin adjetivos emocionales.\n"
+                "· Cada oración debe aportar información nueva, no repetir la anterior.\n"
+                "· Si el mensaje original es muy corto (1-2 ideas), usa solo DATO + ACCIÓN.\n"
+                "PROHIBIDO: 'Agradecería', cierres suaves, relleno, bullets, numeración."
+            )
+        else:  # casual
+            base = (
+                "TONO CASUAL LABORAL — identidad: COMPAÑERO DE CONFIANZA\n"
+                "· Habla como un colega mexicano directo y auténtico, no como un sistema.\n"
+                "· Conectores naturales: porque, así que, por eso, ya que.\n"
+                "· Español de México. Sin anglicismos. Sin formalidades de correo.\n"
+                "· Puede ser directo o hasta un poco irónico si el tono original lo amerita.\n"
+                "PROHIBIDO: frases de robot, saludos de correo formal, 'estimado/a'."
+            )
+
         return base + em_nota + long_nota

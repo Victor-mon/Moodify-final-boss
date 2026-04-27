@@ -26,16 +26,40 @@ const HIST_LABELS = {
     stats_msgs:   'mensajes transformados',
     stats_left:   'Te faltan',
     stats_more:   'más',
-    emo_dom:      'Emoción dominante',
-    tipo_freq:    'Tipo más frecuente',
+    // Cards principales
     msgs_total:   'Mensajes transformados',
     saved_fav:    'Guardados como favoritos',
+    pct_fav:      '% del total',
+    emo_dom:      'Emoción dominante',
+    tipo_freq:    'Tipo más frecuente',
+    // Rachas
+    racha_actual: 'Racha actual',
+    racha_max:    'Racha máxima',
+    dias_consec:  'días seguidos',
+    // Actividad
     top_day:      'Día más activo',
-    day_msgs:     'mensajes',
+    hora_pico:    'Hora pico',
+    prom_dia:     'Promedio diario',
+    msgs_dia:     'mensajes',
+    msgs_hora:    'mensajes',
+    // Tendencia
+    tendencia_titulo: 'Actividad últimos 7 días',
+    semana_tono:      'Tono esta semana',
+    semana_tipo:      'Tipo esta semana',
+    evolucion:        'Evolución de tono',
+    evolucion_mejora: '📈 Mejorando',
+    evolucion_declive:'📉 Con más tensión',
+    evolucion_estable:'➡️ Estable',
+    evolucion_insuf:  '— Pocos datos',
+    // Distribuciones
     emo_dist:     'Distribución emocional',
     tipo_dist:    'Tipos de mensaje',
+    intens_dist:  'Intensidad emocional',
+    // Labels
     emo_labels:   { frustracion:'😤 Frustración', urgencia:'⏰ Urgencia', positivo:'✅ Positivo', neutro:'⚪ Neutro' },
     tipo_labels:  { solicitud:'Solicitud', reporte:'Reporte', comunicado:'Comunicado', queja:'Queja', aviso:'Aviso', pregunta:'Pregunta', general:'General' },
+    intens_labels:{ alta:'Alta', media:'Media', baja:'Baja' },
+    hora_fmt:     (h) => `${h}:00 – ${h+1}:00 hrs`,
     add_fav:      'Agregar a favoritos',
     rm_fav:       'Quitar de favoritos',
   },
@@ -53,16 +77,34 @@ const HIST_LABELS = {
     stats_msgs:   'transformed messages',
     stats_left:   'You need',
     stats_more:   'more',
-    emo_dom:      'Dominant emotion',
-    tipo_freq:    'Most frequent type',
     msgs_total:   'Transformed messages',
     saved_fav:    'Saved as favorites',
+    pct_fav:      '% of total',
+    emo_dom:      'Dominant emotion',
+    tipo_freq:    'Most frequent type',
+    racha_actual: 'Current streak',
+    racha_max:    'Longest streak',
+    dias_consec:  'consecutive days',
     top_day:      'Most active day',
-    day_msgs:     'messages',
+    hora_pico:    'Peak hour',
+    prom_dia:     'Daily average',
+    msgs_dia:     'messages',
+    msgs_hora:    'messages',
+    tendencia_titulo: 'Activity last 7 days',
+    semana_tono:      'This week\'s tone',
+    semana_tipo:      'This week\'s type',
+    evolucion:        'Tone evolution',
+    evolucion_mejora: '📈 Improving',
+    evolucion_declive:'📉 More tense',
+    evolucion_estable:'➡️ Stable',
+    evolucion_insuf:  '— Not enough data',
     emo_dist:     'Emotional distribution',
     tipo_dist:    'Message types',
+    intens_dist:  'Emotional intensity',
     emo_labels:   { frustracion:'😤 Frustration', urgencia:'⏰ Urgency', positivo:'✅ Positive', neutro:'⚪ Neutral' },
     tipo_labels:  { solicitud:'Request', reporte:'Report', comunicado:'Announcement', queja:'Complaint', aviso:'Notice', pregunta:'Question', general:'General' },
+    intens_labels:{ alta:'High', media:'Medium', baja:'Low' },
+    hora_fmt:     (h) => `${h}:00 – ${h+1}:00`,
     add_fav:      'Add to favorites',
     rm_fav:       'Remove from favorites',
   }
@@ -201,44 +243,177 @@ function renderStats(stats) {
     </div>`;
   }
 
-  const favoritos = stats.favoritos || 0;
-  const emociones = stats.emociones || {};
-  const tipos     = stats.tipos     || {};
-  const dia_top   = stats.dia_top   || '—';
-  const msgs_dia  = stats.msgs_dia_top || 0;
+  const favoritos      = stats.favoritos      || 0;
+  const pct_fav        = stats.pct_favoritos  || 0;
+  const emociones      = stats.emociones      || {};
+  const tipos          = stats.tipos          || {};
+  const intensidades   = stats.intensidades   || {};
+  const dia_top        = stats.dia_top        || '—';
+  const msgs_dia       = stats.msgs_dia_top   || 0;
+  const hora_pico      = stats.hora_pico;
+  const msgs_hora      = stats.msgs_hora_pico || 0;
+  const racha_actual   = stats.racha_actual   || 0;
+  const racha_max      = stats.racha_max      || 0;
+  const tendencia_7d   = stats.tendencia_7d   || [];
+  const tono_semana    = stats.tono_semana    || '—';
+  const tipo_semana    = stats.tipo_semana    || '—';
+  const prom_dia       = stats.promedio_diario || 0;
+  const evolucion      = stats.evolucion_tono || 'insuficiente';
 
+  // Colores
   const COLORES_EMO  = { frustracion:'#FF5555', urgencia:'#D4A000', positivo:'#B8F000', neutro:'#888' };
   const COLORES_TIPO = { solicitud:'#3D7ECC', reporte:'#87C200', comunicado:'#D4820A', queja:'#CC3333', aviso:'#8833CC', pregunta:'#0099BB', general:'#888' };
-
-  const maxEmo  = Math.max(...Object.values(emociones), 1);
-  const maxTipo = Math.max(...Object.values(tipos), 1);
-
-  const barrasEmo  = Object.entries(emociones).map(([k, v]) => `
-    <div class="stat-bar-row">
-      <span class="stat-bar-label">${L.emo_labels[k] || k}</span>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(v/maxEmo*100)}%;background:${COLORES_EMO[k]||'#888'};"></div></div>
-      <span class="stat-bar-val">${v}</span>
-    </div>`).join('');
-
-  const barrasTipo = Object.entries(tipos).map(([k, v]) => `
-    <div class="stat-bar-row">
-      <span class="stat-bar-label">${L.tipo_labels[k] || k}</span>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(v/maxTipo*100)}%;background:${COLORES_TIPO[k]||'#888'};"></div></div>
-      <span class="stat-bar-val">${v}</span>
-    </div>`).join('');
+  const COLORES_INT  = { alta:'#FF5555', media:'#D4A000', baja:'#B8F000' };
 
   const emoDom  = Object.keys(emociones)[0] || 'neutro';
   const emoPct  = total ? Math.round((emociones[emoDom] || 0) / total * 100) : 0;
   const tipoDom = Object.keys(tipos)[0] || 'general';
+  const maxEmo  = Math.max(...Object.values(emociones), 1);
+  const maxTipo = Math.max(...Object.values(tipos), 1);
+  const maxInt  = Math.max(...Object.values(intensidades), 1);
 
-  return `<div class="stats-grid">
-    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">${L.msgs_total}</div></div>
-    <div class="stat-card"><div class="stat-num">${favoritos}</div><div class="stat-label">${L.saved_fav}</div></div>
-    <div class="stat-card"><div class="stat-num" style="font-size:1.3rem">${L.emo_labels[emoDom]||emoDom}</div><div class="stat-label">${L.emo_dom} · ${emoPct}%</div></div>
-    <div class="stat-card"><div class="stat-num" style="font-size:1.3rem">${L.tipo_labels[tipoDom]||tipoDom}</div><div class="stat-label">${L.tipo_freq}</div></div>
-    <div class="stat-card stat-card-wide"><div class="stat-section-title">${L.emo_dist}</div>${barrasEmo}</div>
-    <div class="stat-card stat-card-wide"><div class="stat-section-title">${L.tipo_dist}</div>${barrasTipo}</div>
-    <div class="stat-card stat-card-wide"><div class="stat-num" style="font-size:1.1rem">${dia_top}</div><div class="stat-label">${L.top_day} · ${msgs_dia} ${L.day_msgs}</div></div>
+  // Barras emocionales
+  const barrasEmo = Object.entries(emociones).map(([k, v]) => `
+    <div class="stat-bar-row">
+      <span class="stat-bar-label">${L.emo_labels[k] || k}</span>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(v/maxEmo*100)}%;background:${COLORES_EMO[k]||'#888'};"></div></div>
+      <span class="stat-bar-val">${v} <span style="color:rgba(255,255,255,0.15);font-size:9px">(${Math.round(v/total*100)}%)</span></span>
+    </div>`).join('');
+
+  // Barras de tipos
+  const barrasTipo = Object.entries(tipos).map(([k, v]) => `
+    <div class="stat-bar-row">
+      <span class="stat-bar-label">${L.tipo_labels[k] || k}</span>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(v/maxTipo*100)}%;background:${COLORES_TIPO[k]||'#888'};"></div></div>
+      <span class="stat-bar-val">${v} <span style="color:rgba(255,255,255,0.15);font-size:9px">(${Math.round(v/total*100)}%)</span></span>
+    </div>`).join('');
+
+  // Barras de intensidad
+  const barrasInt = Object.entries(intensidades).map(([k, v]) => `
+    <div class="stat-bar-row">
+      <span class="stat-bar-label">${L.intens_labels[k] || k}</span>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(v/maxInt*100)}%;background:${COLORES_INT[k]||'#888'};"></div></div>
+      <span class="stat-bar-val">${v} <span style="color:rgba(255,255,255,0.15);font-size:9px">(${Math.round(v/total*100)}%)</span></span>
+    </div>`).join('');
+
+  // Mini gráfica de tendencia 7 días
+  const maxTend = Math.max(...tendencia_7d.map(d => d.total), 1);
+  const tendBars = tendencia_7d.map(d => {
+    const pct = Math.round(d.total / maxTend * 100);
+    const dayLabel = d.fecha.slice(5); // MM-DD
+    return `
+      <div class="tend-col">
+        <div class="tend-bar-wrap">
+          <div class="tend-bar" style="height:${Math.max(pct, d.total > 0 ? 8 : 2)}%;background:${d.total > 0 ? '#B8F000' : 'rgba(255,255,255,0.06)'};"></div>
+        </div>
+        <div class="tend-label">${dayLabel}</div>
+        <div class="tend-count">${d.total || ''}</div>
+      </div>`;
+  }).join('');
+
+  // Hora pico formateada
+  const horaStr = hora_pico !== null && hora_pico !== undefined
+    ? L.hora_fmt(hora_pico)
+    : '—';
+
+  // Evolución etiqueta
+  const evoLabel = {
+    mejora:       L.evolucion_mejora,
+    declive:      L.evolucion_declive,
+    estable:      L.evolucion_estable,
+    insuficiente: L.evolucion_insuf,
+  }[evolucion] || L.evolucion_insuf;
+
+  const evoColor = {
+    mejora:       '#B8F000',
+    declive:      '#FF5555',
+    estable:      '#888',
+    insuficiente: '#555',
+  }[evolucion] || '#555';
+
+  return `
+  <div class="stats-grid">
+
+    <!-- Fila 1: números principales -->
+    <div class="stat-card">
+      <div class="stat-num">${total}</div>
+      <div class="stat-label">${L.msgs_total}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${favoritos} <span style="font-size:1rem;color:rgba(255,255,255,0.3)">(${pct_fav}%)</span></div>
+      <div class="stat-label">${L.saved_fav}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="font-size:1.25rem">${L.emo_labels[emoDom]||emoDom}</div>
+      <div class="stat-label">${L.emo_dom} · ${emoPct}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="font-size:1.25rem">${L.tipo_labels[tipoDom]||tipoDom}</div>
+      <div class="stat-label">${L.tipo_freq}</div>
+    </div>
+
+    <!-- Fila 2: actividad y rachas -->
+    <div class="stat-card">
+      <div class="stat-num">${racha_actual}</div>
+      <div class="stat-label">${L.racha_actual} · ${L.dias_consec}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${racha_max}</div>
+      <div class="stat-label">${L.racha_max} · ${L.dias_consec}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="font-size:1.1rem">${prom_dia}</div>
+      <div class="stat-label">${L.prom_dia}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="font-size:0.85rem">${horaStr}</div>
+      <div class="stat-label">${L.hora_pico} · ${msgs_hora} ${L.msgs_hora}</div>
+    </div>
+
+    <!-- Tendencia 7 días -->
+    <div class="stat-card stat-card-wide">
+      <div class="stat-section-title">${L.tendencia_titulo}</div>
+      <div class="tend-chart">${tendBars}</div>
+      <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">
+        <div>
+          <span class="stat-bar-label">${L.semana_tono}</span>
+          <span style="margin-left:8px;font-size:12px;color:#fff">${L.emo_labels[tono_semana]||tono_semana}</span>
+        </div>
+        <div>
+          <span class="stat-bar-label">${L.semana_tipo}</span>
+          <span style="margin-left:8px;font-size:12px;color:#fff">${L.tipo_labels[tipo_semana]||tipo_semana}</span>
+        </div>
+        <div>
+          <span class="stat-bar-label">${L.evolucion}</span>
+          <span style="margin-left:8px;font-size:12px;color:${evoColor}">${evoLabel}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distribución emocional -->
+    <div class="stat-card stat-card-wide">
+      <div class="stat-section-title">${L.emo_dist}</div>
+      ${barrasEmo}
+    </div>
+
+    <!-- Tipos de mensaje -->
+    <div class="stat-card stat-card-wide">
+      <div class="stat-section-title">${L.tipo_dist}</div>
+      ${barrasTipo}
+    </div>
+
+    <!-- Intensidad emocional -->
+    <div class="stat-card stat-card-wide">
+      <div class="stat-section-title">${L.intens_dist}</div>
+      ${barrasInt}
+    </div>
+
+    <!-- Día más activo -->
+    <div class="stat-card stat-card-wide">
+      <div class="stat-num" style="font-size:1.1rem">${dia_top}</div>
+      <div class="stat-label">${L.top_day} · ${msgs_dia} ${L.msgs_dia}</div>
+    </div>
+
   </div>`;
 }
 
