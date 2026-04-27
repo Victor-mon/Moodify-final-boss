@@ -297,7 +297,7 @@ class MessageToneAgent:
             resultados[tono] = limpio or "No se pudo generar. Intenta con un mensaje más detallado."
 
         return {
-            "diplomatico": resultados["diplomatico"],
+            "diplomatico": resultados["diplomatico" ],
             "ejecutivo":   resultados["ejecutivo"],
             "casual":      resultados["casual"],
             "textos_es": {
@@ -329,20 +329,16 @@ class MessageToneAgent:
 
             prompt = (
                 "Eres Moodi, un asistente de comunicación laboral mexicano. "
-                "Tienes personalidad: eres directo, empático y con humor sutil. "
-                "Analiza el siguiente mensaje y genera exactamente 3 items en JSON.\n\n"
+                "Eres directo, empático y con humor sutil. "
+                "Analiza el mensaje y responde con UN SOLO comentario breve y natural — "
+                "como si fuera un amigo que te da un consejo rápido. "
+                "Máximo 20 palabras. Sin listas, sin estructura, sin emojis al inicio. "
+                "Solo una oración conversacional, directa y honesta.\n\n"
                 f"Mensaje: \"{mensaje[:300]}\"\n"
-                f"Tono emocional detectado: {tono}\n"
-                f"Tipo de mensaje: {tipo}\n"
-                f"Tiene groserías: {groserías}\n\n"
-                "Reglas:\n"
-                "- Item 1: consejo sobre el tono o impacto del mensaje\n"
-                "- Item 2: consejo práctico de redacción\n"
-                "- Item 3: un chiste o comentario con humor ligero relacionado al mensaje o tono\n"
-                "- Usa iconos: 🔴 para urgente/alerta, 🟡 para precaución, ✅ para positivo, 💡 para consejo, 😄 para humor\n"
-                "- Máximo 20 palabras en 'titulo', máximo 35 palabras en 'texto'\n"
-                "- Responde ÚNICAMENTE con un array JSON válido, sin texto adicional, sin markdown:\n"
-                "[{\"icono\":\"💡\",\"titulo\":\"...\",\"texto\":\"...\"},...]"
+                f"Tono detectado: {tono} | Tipo: {tipo}\n\n"
+                "Responde ÚNICAMENTE con un array JSON con UN item:\n"
+                "[{\"icono\":\"💬\",\"titulo\":\"Moodi dice\",\"texto\":\"tu comentario aquí\"}]\n"
+                "Sin texto adicional, sin markdown, sin prefijos."
             )
 
             model_device = self._get_model_device()
@@ -380,7 +376,7 @@ class MessageToneAgent:
 
             # Validar estructura
             resultado = []
-            for tip in tips[:3]:
+            for tip in tips[:1]:
                 if isinstance(tip, dict) and "icono" in tip and "titulo" in tip and "texto" in tip:
                     resultado.append({
                         "icono":  str(tip["icono"])[:4],

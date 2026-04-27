@@ -355,7 +355,6 @@ body.theme-light .det-neutral { color: #bbb; }
 
 /* ══════════════════════════════════════
    CLIPPY — PERSONAJE ANIMADO
-   Reemplaza el panel simple anterior
 ══════════════════════════════════════ */
 
 .clippy-wrap {
@@ -372,34 +371,29 @@ body.theme-light .det-neutral { color: #bbb; }
   transform: translateY(16px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
-
 .clippy-wrap.clippy-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* ── Columna izquierda: personaje ── */
 .clippy-character {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  position: relative;
 }
 
 #clippy-face-container {
-  width: 72px;
-  height: 78px;
+  width: 88px;
+  height: 58px;
   position: relative;
   animation: clippy-float 3.2s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px var(--clippy-glow, rgba(184,240,0,0.3)));
+  filter: drop-shadow(0 4px 12px rgba(0,232,74,0.15));
   cursor: default;
 }
-
 #clippy-face-container:hover {
-  animation: clippy-float 3.2s ease-in-out infinite,
-             clippy-wiggle 0.4s ease;
+  filter: drop-shadow(0 4px 18px rgba(0,232,74,0.3));
 }
 
 .clippy-face {
@@ -408,38 +402,26 @@ body.theme-light .det-neutral { color: #bbb; }
   overflow: visible;
 }
 
-/* Parpadeo */
-.clippy-face.clippy-blink ellipse[rx="6.5"],
-.clippy-face.clippy-blink ellipse[rx="8"] {
-  transform: scaleY(0.08);
-  transform-origin: center;
-  transition: transform 0.08s ease;
-}
-
-/* Nombre/label bajo el personaje */
 .clippy-name {
   font-family: 'DM Mono', monospace;
   font-size: 7px;
   font-weight: 500;
-  color: var(--clippy-color, #B8F000);
+  color: rgba(0,232,74,0.5);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  opacity: 0.7;
   text-align: center;
+  margin-top: 2px;
 }
 
-/* Pequeña sombra bajo el personaje */
 .clippy-shadow {
-  width: 40px;
-  height: 6px;
-  background: var(--clippy-color, #B8F000);
+  width: 44px;
+  height: 5px;
+  background: rgba(0,232,74,0.12);
   border-radius: 50%;
-  opacity: 0.08;
   filter: blur(4px);
   animation: clippy-shadow-pulse 3.2s ease-in-out infinite;
 }
 
-/* ── Columna derecha: burbuja de tips ── */
 .clippy-bubble {
   flex: 1;
   background: rgba(255,255,255,0.03);
@@ -449,137 +431,92 @@ body.theme-light .det-neutral { color: #bbb; }
   border-radius: 14px 14px 14px 4px;
   padding: 12px 14px;
   position: relative;
-  min-height: 60px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
-
 body.theme-light .clippy-bubble {
   background: rgba(255,255,255,0.6);
   border-color: rgba(0,0,0,0.06);
 }
 
-/* Puntita de la burbuja apuntando al personaje */
 .clippy-bubble::before {
   content: '';
   position: absolute;
-  left: -7px;
-  top: 18px;
-  width: 0;
-  height: 0;
+  left: -7px; top: 18px;
+  width: 0; height: 0;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
   border-right: 8px solid rgba(255,255,255,0.07);
 }
-
 body.theme-light .clippy-bubble::before {
   border-right-color: rgba(0,0,0,0.06);
 }
-
 .clippy-bubble::after {
   content: '';
   position: absolute;
-  left: -5px;
-  top: 19px;
-  width: 0;
-  height: 0;
+  left: -5px; top: 19px;
+  width: 0; height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
   border-right: 6px solid rgba(10,13,20,0.85);
 }
-
 body.theme-light .clippy-bubble::after {
   border-right-color: rgba(255,255,255,0.6);
 }
 
-/* Header de la burbuja */
 .clippy-header {
   font-family: 'DM Mono', monospace;
   font-size: 7.5px;
   font-weight: 500;
-  color: var(--clippy-color, rgba(184,240,0,0.6));
+  color: rgba(0,232,74,0.5);
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
-
-body.theme-light .clippy-header { color: #5a8000; }
+body.theme-light .clippy-header { color: #2a7a3a; }
 
 .clip-dot {
-  width: 4px;
-  height: 4px;
+  width: 4px; height: 4px;
   border-radius: 50%;
-  background: var(--clippy-color, #B8F000);
+  background: rgba(0,232,74,0.6);
   flex-shrink: 0;
   animation: cb-dot-pulse 2s ease-in-out infinite;
 }
 
-/* Items de tips */
-.clip-item {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  animation: clip-item-in 0.3s ease both;
+.clip-single-msg {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.62);
+  line-height: 1.6;
+  font-weight: 300;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.01em;
 }
-.clip-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-body.theme-light .clip-item { border-bottom-color: rgba(0,0,0,0.04); }
+body.theme-light .clip-single-msg { color: #444; }
 
+@keyframes clippy-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+@keyframes clippy-shadow-pulse {
+  0%, 100% { transform: scaleX(1);    opacity: 0.12; }
+  50%       { transform: scaleX(0.7); opacity: 0.05; }
+}
+@keyframes cb-dot-pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:0.3; transform:scale(0.7); }
+}
 @keyframes clip-item-in {
   from { opacity: 0; transform: translateX(-6px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
-.clip-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-
-.clip-title {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.85);
-  margin-bottom: 2px;
-  line-height: 1.3;
-}
-body.theme-light .clip-title { color: #2a3800; }
-
-.clip-text {
-  font-size: 11px;
-  color: rgba(255,255,255,0.38);
-  line-height: 1.55;
-  font-weight: 300;
-}
-body.theme-light .clip-text { color: #5a7020; }
-
-/* ── Animaciones del personaje ── */
-@keyframes clippy-float {
-  0%, 100% { transform: translateY(0px);   }
-  50%       { transform: translateY(-5px); }
-}
-
-@keyframes clippy-shadow-pulse {
-  0%, 100% { transform: scaleX(1);    opacity: 0.08; }
-  50%       { transform: scaleX(0.7); opacity: 0.04; }
-}
-
-@keyframes clippy-wiggle {
-  0%   { transform: rotate(0deg); }
-  25%  { transform: rotate(-8deg); }
-  50%  { transform: rotate(8deg); }
-  75%  { transform: rotate(-4deg); }
-  100% { transform: rotate(0deg); }
-}
-
-@keyframes cb-dot-pulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%     { opacity:0.3; transform:scale(0.7); }
-}
-
 /* ══════════════════════════════════════
    BARRA DE PROGRESO — ajustes
-   La transición ahora es más suave
-   porque recibe valores reales del backend
 ══════════════════════════════════════ */
 
 .dot-bar-progress {
@@ -680,10 +617,14 @@ body.theme-light .output-body { color: #333; }
 body.theme-light .output-placeholder { color: #ccc; }
 
 .copy-btn {
-  position: absolute; top: 8px; right: 8px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.28); border-radius: 6px;
-  font-size: 10px; padding: 4px 10px; cursor: pointer; transition: all 0.15s;
+  position: static;
+  margin-left: auto;
+  background: rgba(255,255,255,0.04); 
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.28); 
+  border-radius: 6px;
+  font-size: 10px; padding: 4px 10px; cursor: pointer; 
+  transition: all 0.15s;
   font-family: 'DM Mono', monospace;
 }
 .copy-btn:hover { background: rgba(184,240,0,0.1); border-color: rgba(184,240,0,0.22); color: #B8F000; }

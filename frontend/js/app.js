@@ -606,7 +606,15 @@ function renderOutputs(data) {
   for (const [key, text] of Object.entries(map)) {
     const el = document.getElementById(`out-${key}`);
     if (!el) continue;
-    el.innerHTML = `<span>${escHtml(text)}</span><button class="copy-btn" onclick="copyText('out-${key}')">${t('copy_btn')}</button>`;
+    el.innerHTML = `<span>${escHtml(text)}</span>`;
+    const header = el.closest('.output-card').querySelector('.output-header');
+    const oldBtn = header.querySelector('.copy-btn');
+    if (oldBtn) oldBtn.remove();
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = t('copy_btn');
+    btn.onclick = () => copyText('out-' + key);
+    header.appendChild(btn);
   }
 }
 
@@ -639,172 +647,102 @@ function renderDetector(data) {
    CLIPPY — mascota animada
 ══════════════════════════════════════════════════════════════ */
 
-const CLIPPY_MOODS = {
-  '🔴': { eyes: 'angry',   color: '#ff6b5b', glow: 'rgba(255,107,91,0.4)' },
-  '🟡': { eyes: 'worried', color: '#ffb830', glow: 'rgba(255,184,48,0.4)' },
-  '⏰': { eyes: 'alert',   color: '#6ab4ff', glow: 'rgba(106,180,255,0.4)' },
-  '✅': { eyes: 'happy',   color: '#B8F000', glow: 'rgba(184,240,0,0.4)'  },
-  '💬': { eyes: 'neutral', color: '#b08aff', glow: 'rgba(176,138,255,0.4)' },
-  '💡': { eyes: 'happy',   color: '#40e0c0', glow: 'rgba(64,224,192,0.4)' },
-};
-
-function getClippyMoodFromTips(tips) {
-  if (!tips || !tips.length) return CLIPPY_MOODS['✅'];
-  const firstIcon = tips[0].icono;
-  return CLIPPY_MOODS[firstIcon] || CLIPPY_MOODS['✅'];
-}
-
-function renderClippyCharacter(mood) {
-  const { eyes, color, glow } = mood;
-
-  const eyeShapes = {
-    happy:   { l: 'M-5,-2 Q0,-7 5,-2',  r: 'M-5,-2 Q0,-7 5,-2',  pupils: false },
-    angry:   { l: 'M-5,-4 Q0,-1 5,-4',  r: 'M-5,-4 Q0,-1 5,-4',  pupils: true  },
-    worried: { l: 'M-5,-3 Q0,-6 5,-3',  r: 'M-5,-3 Q0,-6 5,-3',  pupils: true  },
-    alert:   { l: null, r: null, pupils: true, big: true },
-    neutral: { l: null, r: null, pupils: true },
-  };
-
-  const e = eyeShapes[eyes] || eyeShapes.neutral;
-
-  let eyeSVG = '';
-  if (e.big) {
-    eyeSVG = `
-      <ellipse cx="-14" cy="-8" rx="8" ry="9" fill="white" opacity="0.95"/>
-      <ellipse cx="14"  cy="-8" rx="8" ry="9" fill="white" opacity="0.95"/>
-      <circle  cx="-12" cy="-8" r="4" fill="#111" class="clippy-pupil-l"/>
-      <circle  cx="16"  cy="-8" r="4" fill="#111" class="clippy-pupil-r"/>
-      <circle  cx="-11" cy="-9" r="1.2" fill="white"/>
-      <circle  cx="17"  cy="-9" r="1.2" fill="white"/>
-    `;
-  } else if (e.pupils) {
-    eyeSVG = `
-      <ellipse cx="-14" cy="-8" rx="6.5" ry="7" fill="white" opacity="0.9"/>
-      <ellipse cx="14"  cy="-8" rx="6.5" ry="7" fill="white" opacity="0.9"/>
-      <circle  cx="-13" cy="-8" r="3.5" fill="#111" class="clippy-pupil-l"/>
-      <circle  cx="15"  cy="-8" r="3.5" fill="#111" class="clippy-pupil-r"/>
-      <circle  cx="-12" cy="-9" r="1" fill="white"/>
-      <circle  cx="16"  cy="-9" r="1" fill="white"/>
-    `;
-  } else {
-    eyeSVG = `
-      <path d="M-20,-8 Q-14,-15 -8,-8"  stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M8,-8   Q14,-15  20,-8"  stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-    `;
-  }
-
-  let browSVG = '';
-  if (eyes === 'angry') {
-    browSVG = `
-      <line x1="-20" y1="-22" x2="-8"  y2="-17" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="8"   y1="-17" x2="20"  y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-    `;
-  } else if (eyes === 'worried') {
-    browSVG = `
-      <line x1="-20" y1="-17" x2="-8"  y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="8"   y1="-22" x2="20"  y2="-17" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-    `;
-  } else if (eyes === 'alert') {
-    browSVG = `
-      <line x1="-20" y1="-22" x2="-8" y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="8"   y1="-22" x2="20" y2="-22" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-    `;
-  } else if (eyes === 'happy') {
-    browSVG = `
-      <path d="M-20,-21 Q-14,-25 -8,-21" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <path d="M8,-21   Q14,-25  20,-21" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/>
-    `;
-  }
-
-  let mouthSVG = '';
-  if (eyes === 'happy') {
-    mouthSVG = `<path d="M-10,10 Q0,18 10,10" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
-  } else if (eyes === 'angry') {
-    mouthSVG = `<path d="M-10,14 Q0,8 10,14" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
-  } else if (eyes === 'worried') {
-    mouthSVG = `
-      <path d="M-8,12 Q0,16 8,12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <line x1="-4" y1="14" x2="-2" y2="16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="2"  y1="16" x2="4" y2="14"  stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-    `;
-  } else if (eyes === 'alert') {
-    mouthSVG = `<ellipse cx="0" cy="13" rx="5" ry="4" fill="white" opacity="0.8"/>`;
-  } else {
-    mouthSVG = `<line x1="-8" y1="13" x2="8" y2="13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>`;
-  }
-
+function renderClippyCharacter() {
   return `
-    <svg class="clippy-face" viewBox="-32 -36 64 70" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="0" cy="0" rx="28" ry="30"
-        fill="${color}" opacity="0.15" filter="url(#clippy-blur)"/>
-      <ellipse cx="0" cy="0" rx="26" ry="28"
-        fill="#0a0d12" stroke="${color}" stroke-width="1.8"/>
-      <ellipse cx="0" cy="-14" rx="14" ry="7"
-        fill="white" opacity="0.04"/>
-      ${browSVG}
-      ${eyeSVG}
-      ${mouthSVG}
-      <line x1="-8"  y1="-28" x2="-12" y2="-36" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="8"   y1="-28" x2="12"  y2="-36" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="-12" cy="-36" r="2.5" fill="${color}"/>
-      <circle cx="12"  cy="-36" r="2.5" fill="${color}"/>
-      <defs>
-        <filter id="clippy-blur">
-          <feGaussianBlur stdDeviation="4"/>
-        </filter>
-      </defs>
+    <svg class="clippy-face" viewBox="0 0 80 52" xmlns="http://www.w3.org/2000/svg">
+      <!-- Pantalla rectangular redondeada -->
+      <rect x="1" y="1" width="78" height="50" rx="10" ry="10"
+        fill="#141414" stroke="#2a2a2a" stroke-width="1.2"/>
+      <!-- Brillo sutil superior -->
+      <rect x="5" y="3" width="70" height="8" rx="5"
+        fill="white" opacity="0.035"/>
+ 
+      <!-- Ojo izquierdo -->
+      <ellipse id="eye-l" cx="25" cy="26" rx="9" ry="12"
+        fill="#00e84a"/>
+      <ellipse cx="22" cy="21" rx="2.5" ry="3.2"
+        fill="white" opacity="0.3"/>
+ 
+      <!-- Ojo derecho -->
+      <ellipse id="eye-r" cx="55" cy="26" rx="9" ry="12"
+        fill="#00e84a"/>
+      <ellipse cx="52" cy="21" rx="2.5" ry="3.2"
+        fill="white" opacity="0.3"/>
+ 
+      <!-- Glow verde suave detrás de los ojos -->
+      <ellipse cx="25" cy="26" rx="11" ry="14"
+        fill="#00e84a" opacity="0.12"/>
+      <ellipse cx="55" cy="26" rx="11" ry="14"
+        fill="#00e84a" opacity="0.12"/>
     </svg>
   `;
 }
-
+ 
+// ── Parpadeo de ojos via atributo SVG ────────────────────────
+// (sobrescribe el intento CSS ya que ry como propiedad CSS
+//  no funciona en todos los navegadores)
+let _eyeBlinkState = false;
+ 
+function _doEyeBlink() {
+  const eyeL = document.getElementById('eye-l');
+  const eyeR = document.getElementById('eye-r');
+  if (!eyeL || !eyeR) return;
+ 
+  // Cerrar
+  eyeL.setAttribute('ry', '1.5');
+  eyeR.setAttribute('ry', '1.5');
+ 
+  // Abrir después de 90ms
+  setTimeout(() => {
+    if (eyeL) eyeL.setAttribute('ry', '12');
+    if (eyeR) eyeR.setAttribute('ry', '12');
+  }, 90);
+}
+ 
+let clippyBlinkTimer = null;
+function startClippyBlink() {
+  if (clippyBlinkTimer) clearInterval(clippyBlinkTimer);
+  clippyBlinkTimer = setInterval(() => {
+    _doEyeBlink();
+  }, 2800 + Math.random() * 2200);
+}
+ 
+// ── renderTips: un solo mensaje corto y natural ───────────────
 function renderTips(tips) {
   const wrap  = document.getElementById('clippy-wrap');
   const items = document.getElementById('clippy-items');
   const face  = document.getElementById('clippy-face-container');
   if (!wrap || !items) return;
-
-  if (!tips.length) {
+ 
+  if (!tips || !tips.length) {
     wrap.classList.remove('clippy-visible');
     setTimeout(() => { wrap.style.display = 'none'; }, 400);
     return;
   }
-
-  const mood = getClippyMoodFromTips(tips);
-
+ 
+  // Renderizar el personaje
   if (face) {
-    face.innerHTML = renderClippyCharacter(mood);
-    face.style.setProperty('--clippy-glow', mood.glow);
-    face.style.setProperty('--clippy-color', mood.color);
+    face.innerHTML = renderClippyCharacter();
   }
-
-  items.innerHTML = tips.map((tip, i) => `
-    <div class="clip-item" style="animation-delay:${i * 0.08}s">
-      <span class="clip-icon">${tip.icono}</span>
-      <div>
-        <div class="clip-title">${escHtml(tip.titulo)}</div>
-        <div class="clip-text">${escHtml(tip.texto)}</div>
-      </div>
+ 
+  // Usar solo el texto del primer tip como mensaje único
+  const tip = tips[0];
+  const mensaje = tip.texto || tip.titulo || '';
+ 
+  items.innerHTML = `
+    <div class="clip-single-msg" style="animation: clip-item-in 0.3s ease both;">
+      ${escHtml(mensaje)}
     </div>
-  `).join('');
-
+  `;
+ 
   wrap.style.display = 'flex';
   requestAnimationFrame(() => {
     wrap.classList.add('clippy-visible');
   });
-
+ 
   startClippyBlink();
 }
 
-let clippyBlinkTimer = null;
-function startClippyBlink() {
-  if (clippyBlinkTimer) clearInterval(clippyBlinkTimer);
-  clippyBlinkTimer = setInterval(() => {
-    const face = document.querySelector('.clippy-face');
-    if (!face) { clearInterval(clippyBlinkTimer); return; }
-    face.classList.add('clippy-blink');
-    setTimeout(() => face.classList.remove('clippy-blink'), 180);
-  }, 2800 + Math.random() * 2000);
-}
 
 /* ── Seleccionar idioma de salida ───────────────────────────── */
 function selectLang(lang) {
@@ -824,9 +762,20 @@ async function doTranslate() {
     if (!data) return;
     const map = { dipl: data.diplomatico, ejec: data.ejecutivo, casu: data.casual };
     for (const [key, text] of Object.entries(map)) {
-      const el = document.getElementById(`out-${key}`);
-      if (el) el.innerHTML = `<span>${escHtml(text)}</span><button class="copy-btn" onclick="copyText('out-${key}')">${t('copy_btn')}</button>`;
-    }
+    const el = document.getElementById(`out-${key}`);
+    if (!el) continue;
+    el.innerHTML = `<span>${escHtml(text)}</span>`;
+    const header = el.closest('.output-card').querySelector('.output-header');
+    const oldBtn = header.querySelector('.copy-btn');
+    if (oldBtn) oldBtn.remove();
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = t('copy_btn');
+    btn.onclick = () => copyText('out-' + key);
+    header.appendChild(btn);
+  }
+
+
   } catch (e) {
     console.error('Translate error:', e);
   } finally {
@@ -841,7 +790,7 @@ function copyText(elId) {
   const span = el.querySelector('span');
   const text = span ? span.textContent : '';
   navigator.clipboard.writeText(text).then(() => {
-    const btn = el.querySelector('.copy-btn');
+    const btn = el.closest('.output-card').querySelector('.copy-btn');
     if (btn) {
       const orig = t('copy_btn');
       btn.textContent = t('copied_btn');
