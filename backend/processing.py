@@ -93,6 +93,7 @@ class DetectorIdioma:
 
 class AsesorEmocional:
     def generar(self, ctx, pre):
+        tips       = []
         tono       = ctx["tono_emocional"]
         intensidad = ctx["intensidad"]
         groserías  = pre["tiene_groserías"]
@@ -101,26 +102,33 @@ class AsesorEmocional:
         tipo       = ctx["tipo"]
         receptor   = ctx["receptor"]
 
-        if groserías and intensidad == "alta":
-            msg = "Vaya, parece que alguien está muy frustrado. Respira — el diplomático dice lo mismo sin el karma extra."
-        elif groserías:
-            msg = "Se nota algo de tensión aquí. El tono diplomático te ayuda a decir lo mismo sin encender alarmas."
+        if groserías:
+            tips.append({"icono": "🔴", "titulo": "Vaya, alguien está de malas",
+                "texto": "Noto algo de... energía en tu mensaje 😅. Respira hondo — los mensajes enviados en caliente suelen crear más problemas. La versión diplomática dice lo mismo pero sin el karma."})
+            tips.append({"icono": "💡", "titulo": "Mi recomendación: ve por el diplomático",
+                "texto": "El tono diplomático es como un abogado silencioso: firme, claro y sin que nadie pueda usarlo en tu contra."})
         elif tono == "frustracion" and intensidad == "alta":
-            msg = "La frustración se nota. Antes de enviar, pregúntate: ¿quieres desahogarte o quieres que resuelvan el problema?"
+            tips.append({"icono": "🟡", "titulo": "Se nota la frustración — y está bien",
+                "texto": "Antes de enviarlo, pregúntate: ¿quieres que entiendan cómo te sientes, o quieres que resuelvan el problema? Si es lo segundo, el ejecutivo es tu mejor aliado."})
         elif tono == "frustracion" and intensidad == "media":
-            msg = "Hay un poco de tensión aquí. Nombrarlo directamente suele funcionar mejor que insinuarlo."
-        elif urgencia or tono == "urgencia":
-            msg = "Esto va contra el reloj — asegúrate de que el plazo esté en la primera oración para que no se pierda."
-        elif tipo == "solicitud" and receptor in ("singular_formal", "indeterminado"):
-            msg = "Es una solicitud — un 'agradecería' bien puesto pesa más que un 'necesito'. El diplomático lo clava."
-        elif slang and not groserías:
-            msg = "El tono es muy coloquial para el contexto. Si va a un jefe o cliente, ve por el ejecutivo o diplomático."
-        elif tono == "positivo":
-            msg = "Buenas noticias, buen momento para comunicar. El casual puede sonar más genuino aquí."
-        else:
-            msg = "Elige el tono según la relación: casual para confianza, diplomático para formalidad, ejecutivo cuando el tiempo vale."
-
-        return [{"icono": "💬", "titulo": "Moodi dice", "texto": msg}]
+            tips.append({"icono": "🟡", "titulo": "Hay un poco de tensión aquí",
+                "texto": "Nombrarlo directamente suele funcionar mucho mejor que insinuarlo."})
+        if urgencia or tono == "urgencia":
+            tips.append({"icono": "⏰", "titulo": "Esto va contra el reloj",
+                "texto": "Asegúrate de que el plazo o la acción requerida estén MUY explícitos. Ponlo en la primera oración."})
+        if tipo == "solicitud" and not groserías:
+            tips.append({"icono": "🤝", "titulo": "Es una solicitud — juega bien tus cartas",
+                "texto": "El tono diplomático aquí es clave. Un 'agradecería' pesa más que un 'necesito'." if receptor == "singular_formal" else "Para pedirle algo a alguien, el tono diplomático generalmente tiene mejor recepción."})
+        if slang and not groserías and not tips:
+            tips.append({"icono": "💬", "titulo": "Muy coloquial para el contexto",
+                "texto": "Si va a un jefe o cliente, te recomiendo la versión ejecutiva o diplomática."})
+        if tono == "positivo" and not tips:
+            tips.append({"icono": "✅", "titulo": "Buenas vibras, buen momento para comunicar",
+                "texto": "El tono casual puede sonar más genuino aquí, aunque el diplomático nunca falla."})
+        if not tips:
+            tips.append({"icono": "✅", "titulo": "Mensaje neutral y equilibrado",
+                "texto": "Elige el tono según tu relación: casual para confianza, diplomático para formalidad, ejecutivo cuando el tiempo del otro vale más."})
+        return tips[:3]
 
 
 class PreProcesador:
@@ -140,7 +148,6 @@ class PreProcesador:
             "carga_emocional": "alta" if self._GROSERÍAS.search(mensaje) else "normal",
             "longitud_clase":  "muy_corto" if n <= 5 else "corto" if n <= 12 else "medio" if n <= 30 else "largo",
             "n_palabras":      n,
-            "es_pregunta":     bool(re.search(r'[?¿]', mensaje)),
         }
 
 
@@ -155,12 +162,6 @@ class IntentExtractor:
     _CONSEC  = re.compile(r'\b(?:por\s+(?:eso|lo\s+tanto)|entonces|así\s+que|por\s+lo\s+que)\b', re.I)
     _AREAS   = re.compile(r'\b(?:recursos\s+humanos|RH\b|RRHH\b|HR\b|marketing|ventas|comercial|sistemas?|TI\b|IT\b|tecnolog[ií]a|infraestructura|desarrollo|contabilidad|finanzas|administraci[oó]n|tesorería|operaciones?|log[ií]stica|almacén|producci[oó]n|legal|jurídico|compliance|direcci[oó]n|gerencia|soporte|helpdesk|mesa\s+de\s+ayuda|compras|adquisiciones|proveedores|calidad|QA\b|auditoría|atenci[oó]n\s+a\s+clientes?)\b', re.IGNORECASE)
     _SALUDO  = re.compile(r'^(?P<saludo>(?:hola|oye|buenos?\s+(?:días|tardes|noches)|estimad[ao]s?|querido[s]?|buen\s+día)\s*[,:]?\s*(?P<nombre>[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}(?:\s+[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,})?)?)', re.IGNORECASE | re.UNICODE)
-    _NOMBRE_CUERPO = re.compile(
-    r'\b(?:habla(?:r)?\s+con|avísa(?:le)?\s+a|escríbe(?:le)?\s+a|'
-    r'dile\s+a|informa(?:r)?\s+a|contacta(?:r)?\s+a)\s+'
-    r'([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})',
-    re.IGNORECASE
-)
 
     def extraer(self, mensaje):
         saludo_m = self._SALUDO.match(mensaje.strip())
@@ -178,8 +179,6 @@ class IntentExtractor:
             "areas":          list(dict.fromkeys(m.group(0) for m in self._AREAS.finditer(mensaje)))[:3],
             "saludo_apertura": saludo_m.group("saludo").strip() if saludo_m else None,
             "nombre_saludo":   saludo_m.group("nombre").strip() if (saludo_m and saludo_m.group("nombre")) else None,
-            "nombre_destinatario": (lambda m: m.group(1) if m else None)(self._NOMBRE_CUERPO.search(mensaje)),
-
         }
 
     def construir_ancla(self, intento):
@@ -190,7 +189,7 @@ class IntentExtractor:
         if intento["montos"]:  partes.append(f"montos exactos: {', '.join(intento['montos'][:3])}")
         if intento["objetos"]: partes.append(f"tema central: {', '.join(set(intento['objetos'][:3]))}")
         if intento["areas"]:   partes.append(f"áreas de trabajo: {', '.join(intento['areas'][:3])}")
-        if intento.get("nombre_destinatario"):partes.append(f"destinatario explícito: {intento['nombre_destinatario']} (preservar en el mensaje)")
+        if intento.get("saludo_apertura"): partes.append(f"SALUDO DE APERTURA: '{intento['saludo_apertura']}' — adaptar al tono")
         if intento["verbo_clave"]:         partes.append(f"acción principal: {intento['verbo_clave'][0]}")
         if intento["tiene_causa"] and intento["tiene_consec"]: partes.append("estructura: causa → consecuencia (NO invertir)")
         elif intento["tiene_causa"]: partes.append("hay una causa explícita (NO eliminar)")
@@ -216,11 +215,6 @@ class RoleMatrix:
         "urgencia":    re.compile(r'\b(urgente|ahorita|ya|ahora|inmediato|cuanto\s+antes|hoy\s+mismo|pronto)\b', re.I),
         "positivo":    re.compile(r'\b(excelente|logr|ganamos|cerramos|felicit|gracias|feliz|contento|orgullos|buenas\s+noticias|éxito)\b', re.I),
     }
-
-    _CC_IMPL = re.compile(
-    r'\b(a\s+todos|el\s+equipo|les\s+comunico|para\s+conocimiento|'
-    r'fyi\b|para\s+que\s+estén\s+al\s+tanto|quiero\s+que\s+sepan)\b',
-    re.IGNORECASE)
 
     def analizar(self, mensaje, pre):
         m  = mensaje.strip()
@@ -257,24 +251,11 @@ class RoleMatrix:
             "tiene_emojis":       bool(_EMJ.search(m)),
             "palabras":           len(m.split()),
             "registro_receptor":  "formal" if sc_sgfo > sc_sgin else "informal",
-            "es_broadcast": bool(self._CC_IMPL.search(m)),
         }
 
 
 class OutputCleaner:
-    _PREFIJOS = re.compile(
-    r'^[\s\n]*(?:(?:mensaje\s+)?refactorizado\s*[:\-–]?\s*|'
-    r'respuesta\s+(?:diplomática|ejecutiva|casual)\s*[:\-–]?\s*|'
-    r'\*{0,2}(?:refactorizado|versión\s+\w+)\*{0,2}\s*[:\-–]?\s*|'
-    r'aquí\s+(?:está|te\s+dejo|tienes|va)\s*[^:\n]*[:\-–]?\s*|'
-    r'(?:claro|por\s+supuesto|con\s+gusto|entendido)[,.]?\s*|'
-    r'nota\s*[:\-–]\s*[^\n]+\n\s*|'
-    r'con\s+(?:mucho\s+)?gusto[,.]?\s*|'
-    r'espero\s+(?:que\s+)?(?:esto|te|le)\s+[^.]{0,40}\.\s*|'
-    r'a\s+continuación\s*[:\-–]?\s*|'
-    r'te\s+presento\s+[^:\n]*[:\-–]?\s*)',
-    re.IGNORECASE | re.MULTILINE
-    )
+    _PREFIJOS  = re.compile(r'^[\s\n]*(?:(?:mensaje\s+)?refactorizado\s*[:\-–]?\s*|respuesta\s+(?:diplomática|ejecutiva|casual)\s*[:\-–]?\s*|\*{0,2}(?:refactorizado|versión\s+\w+)\*{0,2}\s*[:\-–]?\s*|aquí\s+(?:está|te\s+dejo|tienes|va)\s*[^:\n]*[:\-–]?\s*|(?:claro|por\s+supuesto|con\s+gusto|entendido)[,.]?\s*|nota\s*[:\-–]\s*[^\n]+\n\s*)', re.IGNORECASE | re.MULTILINE)
     _SUFIJOS   = re.compile(r'\n+(?:espero\s+que\s+(?:esto|te|le)\s+.{0,80}$|nota\s*[:\-–]\s*.{0,120}$|si\s+necesitas\s+.{0,80}$|puedo\s+ajustar\s+.{0,80}$)', re.IGNORECASE | re.DOTALL)
     _ETIQUETAS = re.compile(r'(?:tono\s+)?(?:diplomático|ejecutivo|casual)\s*[:\-–]\s*', re.IGNORECASE)
     _NO_LATINO = re.compile(r'\s*[\u0370-\u03ff\u0400-\u04ff\u0600-\u06ff\u0900-\u0fff\u3000-\u9fff\uac00-\ud7af].*', re.DOTALL)
@@ -326,23 +307,11 @@ class PromptBuilder:
         lon_clase  = pre["longitud_clase"]
         groserías  = pre["tiene_groserías"]
         slang      = pre["tiene_slang"]
-        es_pregunta  = pre.get("es_pregunta", False)
-        es_broadcast = ctx.get("es_broadcast", False)
-        n_datos      = len(intento["numeros"]) + len(intento["fechas"]) + len(intento["montos"]) + len(intento["objetos"])
         reg_rec    = ctx.get("registro_receptor", "informal")
 
         estrategia = "ESTRATEGIA — MENSAJE MUY CORTO:\nCambia el tono únicamente. Misma brevedad." if lon_clase == "muy_corto" else \
                      ("ESTRATEGIA — MENSAJE CORTO:\nMantén la respuesta breve." if lon_clase == "corto" else \
                       "ESTRATEGIA — PRESERVACIÓN COMPLETA:\nConserva TODO el contenido. Cada dato, fecha, acción y razón DEBE aparecer en la versión reescrita.")
-        densidad_nota = ""
-        if n_datos >= 3:
-                densidad_nota = f"\nMensaje con ALTA densidad de datos ({n_datos} elementos clave) — permite hasta {max_w} palabras para no perder información.\n"
-        elif lon_clase in ("muy_corto", "corto") and n_datos == 0:
-                densidad_nota = "\nMensaje simple y corto — respuesta igualmente breve.\n"
-
-        pregunta_nota  = "\nADVERTENCIA: El mensaje original es una PREGUNTA — la versión reescrita también debe serlo.\n" if es_pregunta else ""
-        broadcast_nota = "\nMensaje BROADCAST (para equipo completo) — tono más formal e inclusivo.\n" if es_broadcast else ""
-
         slang_instr = f"SLANG/GROSERÍAS — carga emocional: {intensidad}\nTransmite ESA MISMA INTENSIDAD en tono {tono.upper()}.\nNO uses las palabras originales. SÍ preserva la fuerza.\n" if (groserías or slang) else ""
         perspectiva = self._perspectiva(emisor, receptor, reg_rec)
         tono_def    = self._tono_principios(tono, tono_em, intensidad, lon_clase, tipo)
@@ -373,9 +342,6 @@ class PromptBuilder:
             f"{tono_def}{nl}{nl}"
             f"{slang_bloque}{nl}"
             f"Tipo de mensaje: {tipo_nota}{nl}{nl}"
-            f"{densidad_nota}{nl}"
-            f"{pregunta_nota}"
-            f"{broadcast_nota}"
             f"PROHIBICIONES ABSOLUTAS:{nl}"
             f"· NO escribas prefijos ni etiquetas{nl}"
             f"· NO generes dos versiones{nl}"
