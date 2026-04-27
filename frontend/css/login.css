@@ -177,10 +177,10 @@ html, body {
 }
 
 .login-heading {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 2.4rem;
-    font-weight: 400;
-    font-style: italic;
+    font-weight: 300;
+    font-style: normal;
     color: #f0f0f8;
     letter-spacing: -0.02em;
     line-height: 1.1;
